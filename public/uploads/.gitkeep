@@ -1,0 +1,6 @@
+# Admin-uploaded images are written here at runtime.
+#
+# The directory is gitignored (see .gitignore) so uploaded patient photographs
+# never enter version control; this file keeps the folder in the repository.
+# In Docker it is a volume mount; on Vercel use `uploadDirectory` plus Blob
+# storage instead (see README, "Deploying" → "File uploads").

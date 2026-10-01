@@ -1,0 +1,375 @@
+// ---------------------------------------------------------------------------
+// Dental Atelier - Prisma schema (MySQL)
+//
+// Models follow the inventory in the Executive Summary and extend it with the
+// pieces the two portals actually need:
+//
+//   * Page / PageBlock  -> "Content Editor" for the marketing pages
+//   * Service            -> Products & Materials + Services pages
+//   * Appointment        -> client booking + admin calendar
+//   * ContactMessage     -> every public form, discriminated by `source`
+//   * SmileCheckAnswer  -> the smile-check checklist answers
+//   * Auth: User/Account/Session/VerificationToken for NextAuth + Credentials
+// ---------------------------------------------------------------------------
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------- Enums -------------------------------------
+
+enum UserRole {
+  ADMIN
+  CLIENT
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum AppointmentType {
+  CONSULTATION
+  CUSTOM_SHADING
+  FACIAL_ANALYSIS
+  SMILE_DESIGN
+  TREATMENT
+  OTHER
+}
+
+enum MessageSource {
+  CONTACT
+  SMILE_CHECK
+  REQUEST_INFO
+  PORTFOLIO_REQUEST
+  FAQ_QUESTION
+  PORTAL
+}
+
+enum MessageStatus {
+  NEW
+  READ
+  ANSWERED
+  SPAM
+}
+
+enum FaqCategory {
+  GENERAL
+  VENEERS
+  CROWNS_BRIDGES
+  IMPLANTS
+  TREATMENT
+  COST
+}
+
+// ------------------------------- Auth --------------------------------------
+
+model User {
+  id            Int       @id @default(autoincrement())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  /// bcrypt hash. Never expose this field through an API route.
+  password      String?
+  phone         String?
+  role          UserRole  @default(CLIENT)
+  image         String?
+  /// Last portal sign-in, used for the "active clients" admin metric.
+  lastLoginAt   DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  appointments Appointment[]
+  messages     ContactMessage[]
+  accounts     Account[]
+  sessions     Session[]
+
+  @@index([role])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            Int
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       Int
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// -------------------------- Appointments -----------------------------------
+
+model Appointment {
+  id            Int               @id @default(autoincrement())
+  /// Links to a portal account when the requester was signed in.
+  userId        Int?
+  firstName     String
+  lastName      String
+  email         String
+  phone         String?
+  /// Free-text preferred day; the studio confirms the exact slot by phone.
+  preferredDate DateTime?
+  /// Exact slot, only set by the admin once confirmed.
+  scheduledAt   DateTime?
+  type          AppointmentType   @default(CONSULTATION)
+  notes         String?           @db.Text
+  status        AppointmentStatus @default(PENDING)
+  /// Set when the public form requested a specific service.
+  serviceId     Int?
+  /// Admin-only internal note.
+  internalNotes String?           @db.Text
+  /// Where the request came from, e.g. "portal", "contact", "smile-check".
+  source        String            @default("website")
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  service Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([email])
+}
+
+// ------------------------- Inquiries / messages ----------------------------
+
+model ContactMessage {
+  id                Int           @id @default(autoincrement())
+  userId            Int?
+  firstName         String
+  lastName          String
+  email             String
+  phone             String?
+  message           String        @db.Text
+  /// Which form produced this record (Contact, Smile Check, Request info...).
+  source            MessageSource @default(CONTACT)
+  status            MessageStatus @default(NEW)
+  /// Comma separated ids of the smile-check questions that were ticked.
+  smileCheckAnswers String?       @db.Text
+  /// Which page the form was submitted from.
+  referrer          String?
+  /// True when the honeypot field was filled or the request tripped rate limits.
+  isSpam            Boolean       @default(false)
+  repliedAt         DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([source])
+  @@index([createdAt])
+  @@index([email])
+}
+
+// ----------------------------- Content -------------------------------------
+
+model Page {
+  id          Int      @id @default(autoincrement())
+  /// Stable key matching the route, e.g. "about-us", "services".
+  slug        String   @unique
+  title       String
+  /// Short sentence used for <meta name="description"> and OG tags.
+  description String   @db.Text
+  heading     String?
+  /// Optional hero/OG image path (starts with "/").
+  image       String?
+  /// "noindex" keeps thin pages out of the index.
+  noIndex     Boolean  @default(false)
+  published   Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  blocks PageBlock[]
+
+  @@index([published])
+}
+
+model PageBlock {
+  id        Int      @id @default(autoincrement())
+  pageId    Int
+  /// Layout key the renderer switches on: hero | rich-text | cards | gallery |
+  /// faq-accordion | contact-form | cta | testimonial-slider | map | smile-check.
+  type      String
+  /// Position within the page.
+  position  Int      @default(0)
+  title     String?
+  subtitle  String?
+  body      String?  @db.Text
+  /// JSON payload for structured blocks (image lists, button pairs, ...).
+  data      Json?
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId, position])
+}
+
+model Service {
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique
+  title       String
+  /// One-line teaser used on cards and in the sitemap.
+  summary     String   @db.Text
+  /// Full body copy (markdown-lite: blank lines separate paragraphs).
+  description String   @db.Text
+  /// Product & Materials section (facial analysis, veneers, ...) or "service".
+  category    String   @default("product")
+  image       String?
+  icon        String?
+  priceFrom   String?
+  /// Cross-links used on subpages.
+  order       Int      @default(0)
+  published   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  appointments Appointment[]
+
+  @@index([category, order])
+}
+
+model Faq {
+  id        Int         @id @default(autoincrement())
+  question  String
+  answer    String      @db.Text
+  category  FaqCategory @default(GENERAL)
+  order     Int         @default(0)
+  published Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([category, order])
+}
+
+model Testimonial {
+  id        Int      @id @default(autoincrement())
+  author    String
+  /// Treatment context shown under the name, e.g. "6 veneers".
+  treatment String?
+  quote     String   @db.Text
+  image     String?
+  order     Int      @default(0)
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([published, order])
+}
+
+model GalleryImage {
+  id        Int      @id @default(autoincrement())
+  title     String?
+  url       String
+  /// Mandatory alt text - the legacy site had none at all.
+  altText   String
+  /// "before" | "after" | "lab" | "smile" | ... Drives the portfolio filters.
+  category  String   @default("portfolio")
+  width     Int?
+  height    Int?
+  order     Int      @default(0)
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category, order])
+}
+
+model SmileCheckQuestion {
+  id        Int      @id @default(autoincrement())
+  question  String
+  order     Int      @default(0)
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model DirectorMilestone {
+  id        Int     @id @default(autoincrement())
+  period    String
+  role      String
+  place     String?
+  order     Int     @default(0)
+  published Boolean @default(true)
+}
+
+model Setting {
+  id        Int      @id @default(autoincrement())
+  /// e.g. "site.tagline", "contact.email"
+  key       String   @unique
+  value     String   @db.Text
+  /// Grouping for the admin Settings screen.
+  group     String   @default("general")
+  updatedAt DateTime @updatedAt
+}
+
+/// Optional mailing list. Unsubscribed addresses are kept with `active=false`
+/// so the list is never silently truncated.
+model NewsletterSubscriber {
+  id               Int       @id @default(autoincrement())
+  email            String    @unique
+  name             String?
+  source           String    @default("footer")
+  /// SHA-256 of the email, so the unsubscribe token is not a plain address.
+  unsubscribeToken String    @unique
+  active           Boolean   @default(true)
+  confirmedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([active])
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  action    String
+  entity    String
+  entityId  String?
+  /// Serialised before/after snapshot; never contains secrets.
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}

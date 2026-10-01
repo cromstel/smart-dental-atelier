@@ -1,0 +1,9 @@
+# Normalise line endings to LF in the repository.
+# Windows checkouts otherwise commit CRLF, which Docker and shell scripts dislike.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary

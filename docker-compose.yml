@@ -1,0 +1,66 @@
+# Dental Atelier — local stack (app + MySQL).
+#
+#   cp .env.example .env      # then set NEXTAUTH_SECRET and ADMIN_PASSWORD
+#   docker compose up --build
+#   docker compose exec app npx prisma migrate deploy
+#   docker compose exec app npm run db:seed
+#
+# The app is published on http://localhost:3031.
+
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-dental_atelier}
+      MYSQL_USER: ${MYSQL_USER:-dental_atelier}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-dental_atelier}
+      # Deterministic collation so the Prisma schema and the database agree.
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_change_me}
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      # Exposed so you can inspect the database from the host.
+      - '3307:3306'
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-p${MYSQL_ROOT_PASSWORD:-root_change_me}']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        # Wait for a real MySQL, not just a listening port, so the first
+        # `prisma migrate deploy` does not fail on a cold database.
+        condition: service_healthy
+    environment:
+      # Host `db`, port 3306 — the *internal* port, not the mapped 3307.
+      DATABASE_URL: mysql://${MYSQL_USER:-dental_atelier}:${MYSQL_PASSWORD:-dental_atelier}@db:3306/${MYSQL_DATABASE:-dental_atelier}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3031}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?set NEXTAUTH_SECRET in .env}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3031}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-michal@dentalatelier.co}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      NOTIFY_EMAIL: ${NOTIFY_EMAIL:-}
+    ports:
+      - '3031:3031'
+    volumes:
+      # Admin gallery uploads survive a container rebuild.
+      - uploads:/app/public/uploads
+
+volumes:
+  db_data:
+  uploads:
