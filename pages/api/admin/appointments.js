@@ -1,6 +1,7 @@
 import { prisma, isDatabaseConfigured } from '@/lib/prisma';
 import { apiHandler, methodNotAllowed, requireAdmin, HttpError } from '@/lib/api';
 import { audit } from '@/lib/audit';
+import { withWriteRetry } from '@/lib/auth';
 import { parsePagination } from '@/lib/guards';
 
 const STATUSES = ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW'];
@@ -108,6 +109,15 @@ export default apiHandler(async (req, res) => {
     const { id, ...changes } = req.body || {};
     if (!id) throw new HttpError(422, 'An appointment id is required.');
 
+    // A stale table row (deleted by another admin, or an id from an old page)
+    // otherwise surfaces as Prisma P2025 and a generic 500. Confirm the record
+    // exists so the caller gets a 404 with a usable message.
+    const existing = await prisma.appointment.findUnique({
+      where: { id: Number(id) },
+      select: { id: true },
+    });
+    if (!existing) throw new HttpError(404, 'Appointment not found.');
+
     const data = {};
     if (changes.status) {
       if (!STATUSES.includes(changes.status)) throw new HttpError(422, 'Unknown status.');
@@ -126,10 +136,9 @@ export default apiHandler(async (req, res) => {
 
     if (Object.keys(data).length === 0) throw new HttpError(422, 'Nothing to update.');
 
-    const appointment = await prisma.appointment.update({
-      where: { id: Number(id) },
-      data,
-    });
+    const appointment = await withWriteRetry(() =>
+      prisma.appointment.update({ where: { id: Number(id) }, data }),
+    );
 
     await audit({
       userId: guard.user.id,

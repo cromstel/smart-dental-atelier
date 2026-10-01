@@ -65,5 +65,14 @@ const nextConfig = {
   },
 };
 
+/**
+ * Next validates this object strictly and warns about unknown keys, so the
+ * shared port is exposed on a symbol-ish extra property that the config schema
+ * ignores, rather than as a sibling key.
+ */
+Object.defineProperty(module.exports, 'PORT', {
+  value: PORT,
+  enumerable: false,
+});
+
 module.exports = nextConfig;
-module.exports.PORT = PORT;

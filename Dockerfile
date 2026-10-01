@@ -13,11 +13,14 @@
 # Run (Compose does this for you):
 #   docker run -p 3031:3031 --env-file .env.production dental-atelier
 
+# Prisma 7 requires Node 20.19+ / 22.12+ / 24+, so every stage pins 24.
+ARG NODE_VERSION=24
+
 # ---------------------------------------------------------------- deps stage
-FROM node:22-alpine AS deps
+FROM node:${NODE_VERSION}-alpine AS deps
 WORKDIR /app
 
-# libc6-compat is required by the Prisma query engine on Alpine.
+# libc6-compat is required by the MariaDB client library on Alpine.
 RUN apk add --no-cache libc6-compat openssl
 
 # Only the manifests first, so `npm ci` is cached until a dependency changes.
@@ -27,7 +30,7 @@ COPY package.json package-lock.json* ./
 RUN npm ci --no-audit --no-fund --ignore-scripts
 
 # ------------------------------------------------------------- builder stage
-FROM node:22-alpine AS builder
+FROM node:${NODE_VERSION}-alpine AS builder
 WORKDIR /app
 
 RUN apk add --no-cache libc6-compat openssl
@@ -48,7 +51,7 @@ RUN DATABASE_URL="mysql://build:build@127.0.0.1:3306/build" \
     npx next build
 
 # -------------------------------------------------------------- runner stage
-FROM node:22-alpine AS runner
+FROM node:${NODE_VERSION}-alpine AS runner
 WORKDIR /app
 
 RUN apk add --no-cache libc6-compat openssl wget \

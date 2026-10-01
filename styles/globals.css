@@ -1,6 +1,209 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+@utility container {
+  margin-inline: auto;
+  padding-inline: 1rem;
+  @media (width >= --theme(--breakpoint-sm)) {
+    max-width: none;
+  }
+  @media (width >= 640px) {
+    max-width: 640px;
+    padding-inline: 1.5rem;
+  }
+  @media (width >= 768px) {
+    max-width: 768px;
+  }
+  @media (width >= 1024px) {
+    max-width: 1024px;
+    padding-inline: 2rem;
+  }
+  @media (width >= 1280px) {
+    max-width: 1280px;
+  }
+  @media (width >= 1320px) {
+    max-width: 1320px;
+  }
+}
+
+@theme {
+  --color-brand-50: #fbf6e3;
+  --color-brand-100: #f6ecbf;
+  --color-brand-200: #ebd78a;
+  --color-brand-300: #dfc255;
+  --color-brand-400: #d7ae15;
+  --color-brand-500: #be9a12;
+  --color-brand-600: #9c7d0f;
+  --color-brand-700: #6f590a;
+  --color-brand-800: #3a300c;
+  --color-brand-900: #201c07;
+  --color-brand: #d7ae15;
+  --color-brand-contrast: #000000;
+
+  --color-ink-400: #333338;
+  --color-ink-500: #26262a;
+  --color-ink-600: #1c1c1f;
+  --color-ink-700: #131315;
+  --color-ink-800: #0b0b0c;
+  --color-ink-900: #050505;
+  --color-ink: #020202;
+
+  --color-silver-50: #f6f7f7;
+  --color-silver-100: #e6e7e7;
+  --color-silver-200: #d6d7d7;
+  --color-silver-300: #c9cbcb;
+  --color-silver-400: #c9cbcb;
+  --color-silver-500: #aeb0b0;
+  --color-silver-600: #8a8c8c;
+  --color-silver-700: #6b6d6d;
+  --color-silver: #c9cbcb;
+
+  --color-accent-300: #9fcbfb;
+  --color-accent-400: #79b4f9;
+  --color-accent-500: #3d93ec;
+  --color-accent-600: #0b63c4;
+  --color-accent: #79b4f9;
+
+  --color-navy-700: #072a66;
+  --color-navy-800: #0b3d91;
+  --color-navy-900: #062a66;
+  --color-navy: #0b3d91;
+
+  --color-error-300: #ff9c9c;
+  --color-error-400: #ff6b6b;
+  --color-error-500: #d82424;
+  --color-error-600: #a81b1b;
+  --color-error: #ff6b6b;
+
+  --color-success-400: #4ade80;
+  --color-success-500: #16a34a;
+  --color-success: #4ade80;
+
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #d97706;
+  --color-warning: #fbbf24;
+
+  --font-sans:
+    Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+    Helvetica Neue, Arial, sans-serif;
+  --font-display:
+    'Playfair Display', Cormorant Garamond, Georgia, Cambria, 'Times New Roman',
+    serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+
+  --tracking-caps: 0.14em;
+
+  --radius: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  /* v4 renamed the default scales, so `shadow-sm` now means what `shadow`
+     used to. These two keep the original v3 look for the utilities we use.
+     `--shadow-card*` / `--shadow-glow` were part of the v3 config; they are
+     retained for parity even though no component currently references them. */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.5), 0 0 0 1px rgb(215 174 21 / 0.12);
+  --shadow-card-hover:
+    0 12px 32px -12px rgb(0 0 0 / 0.8), 0 0 0 1px rgb(215 174 21 / 0.35);
+  --shadow-glow: 0 0 0 3px rgb(215 174 21 / 0.25);
+
+  --container-prose: 68ch;
+
+  --animate-fade-in: fade-in 0.6s ease-out both;
+  --animate-fade-in-slow: fade-in-slow 1.2s ease-out both;
+
+  --transition-duration-250: 250ms;
+
+  @keyframes fade-in {
+    0% {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes fade-in-slow {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility container-page {
+  @apply container mx-auto;
+}
+
+@utility prose-atelier {
+  @apply text-silver-300 leading-relaxed;
+
+  & p {
+    @apply mb-4 leading-relaxed;
+  }
+
+  & h2 {
+    @apply mt-10 mb-4 text-2xl md:text-3xl;
+  }
+
+  & h3 {
+    @apply mt-8 mb-3 text-xl text-silver-100;
+  }
+
+  & a {
+    @apply text-brand-300 underline decoration-dotted underline-offset-4 transition hover:text-brand-200 hover:decoration-solid;
+  }
+
+  & ul {
+    @apply mb-4 list-disc space-y-2 pl-6;
+  }
+}
+
+@utility skip-link {
+  @apply sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-100 focus:rounded-md focus:bg-brand-400 focus:px-4 focus:py-2 focus:font-semibold focus:text-black;
+}
+
+@utility panel {
+  /* Legacy `.intro` block: gold-tinted panel used across the old pages. */
+  @apply rounded-lg border border-brand-400/20 bg-white/4 p-6;
+}
+
+@utility panel-gold {
+  @apply rounded-lg border border-brand-400/40 bg-brand-400/10 p-6;
+}
+
+@utility link-underline {
+  @apply border-b border-dotted border-silver-600/60 transition-colors hover:border-brand-300 hover:text-brand-200;
+}
+
+
 
 @layer base {
   :root {
@@ -32,7 +235,7 @@
   /* Never remove focus rings: the legacy CSS did (`a:focus {outline:none}`), which
      broke WCAG 2.1 keyboard navigation. We replace it with a visible ring. */
   :focus-visible {
-    @apply outline-none ring-2 ring-accent-400 ring-offset-2 ring-offset-ink rounded-sm;
+    @apply outline-hidden ring-2 ring-accent-400 ring-offset-2 ring-offset-ink rounded-xs;
   }
 
   ::selection {
@@ -49,72 +252,6 @@
   /* Scrollbars on the dark surface */
   * {
     scrollbar-color: #3a300c #020202;
-  }
-}
-
-@layer components {
-  .container-page {
-    @apply container mx-auto;
-  }
-
-  .prose-atelier {
-    @apply text-silver-300 leading-relaxed;
-  }
-
-  .prose-atelier p {
-    @apply mb-4 leading-relaxed;
-  }
-
-  .prose-atelier h2 {
-    @apply mt-10 mb-4 text-2xl md:text-3xl;
-  }
-
-  .prose-atelier h3 {
-    @apply mt-8 mb-3 text-xl text-silver-100;
-  }
-
-  .prose-atelier a {
-    @apply text-brand-300 underline decoration-dotted underline-offset-4 transition hover:text-brand-200 hover:decoration-solid;
-  }
-
-  .prose-atelier ul {
-    @apply mb-4 list-disc space-y-2 pl-6;
-  }
-
-  .skip-link {
-    @apply sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-brand-400 focus:px-4 focus:py-2 focus:font-semibold focus:text-black;
-  }
-
-  /* Legacy `.intro` block: gold-tinted panel used across the old pages. */
-  .panel {
-    @apply rounded-lg border border-brand-400/20 bg-white/[0.04] p-6;
-  }
-
-  .panel-gold {
-    @apply rounded-lg border border-brand-400/40 bg-brand-400/10 p-6;
-  }
-
-  .link-underline {
-    @apply border-b border-dotted border-silver-600/60 transition-colors hover:border-brand-300 hover:text-brand-200;
-  }
-}
-
-@layer utilities {
-  /* Visible only to screen readers. */
-  .sr-only-focusable:not(:focus):not(:focus-within) {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
-  }
-
-  .text-balance {
-    text-wrap: balance;
   }
 }
 

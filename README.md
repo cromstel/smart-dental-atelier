@@ -51,7 +51,8 @@ This version keeps every page and every sentence, and adds:
 
 ## Quick start
 
-Requires **Node.js 20+** and a **MySQL 8** (or MariaDB 10.6+) instance.
+Requires **Node.js 20.19+ / 22.12+ / 24+** (Prisma 7's floor; CI and Docker
+both pin 24) and a **MySQL 8** (or MariaDB 10.6+) instance.
 
 ```bash
 git clone <repo> dental-atelier && cd dental-atelier
@@ -92,7 +93,7 @@ on 3000). The port is set in three places that are kept in sync: the `dev` and
 | `npm run dev` | Development server on :3031 with hot reload |
 | `npm run build` | `prisma generate` + production build |
 | `npm start` | Serve the production build |
-| `npm run lint` | ESLint (`next/core-web-vitals`) |
+| `npm run lint` | ESLint 9 flat config (`eslint.config.mjs`) |
 | `npm test` | Jest: unit, API and lib suites |
 | `npm run test:e2e` | Playwright against a running build |
 | `npm run db:migrate` | Create and apply a migration in development |
@@ -143,10 +144,13 @@ components/
                StatCard, StatusBadge, ConfirmButton, Pagination
   portal/      PortalShell
 
-lib/           prisma, auth, authOptions, api (handler wrapper), guards,
-               validation (Zod), cms (content access), seo, format, serialize,
-               mailer, audit, content (bundled copy)
+lib/           prisma (driver-adapter client), auth (+ withWriteRetry),
+               authOptions, api (handler wrapper), guards, validation (Zod),
+               cms (content access), seo, format, serialize, mailer, audit,
+               content (bundled copy)
 prisma/        schema.prisma, migrations, seed.mjs
+prisma.config.mjs   CLI config: datasource URL, schema path, seed command
+generated/     Prisma 7 client output (gitignored; `npx prisma generate`)
 pages/         routes + api/
 styles/        globals.css (Tailwind layers, a11y defaults)
 tests/         unit, api, lib, e2e
@@ -230,7 +234,8 @@ fact recoverable, and the real brand is **gold on near-black**:
 
 The token *structure* from the report is kept; the values now match the client's
 actual identity, so the existing gold logo and photography stay consistent. See
-the comment at the top of `tailwind.config.js`.
+the top of `styles/globals.css`, which declares them as CSS `@theme` variables
+since Tailwind 4 no longer auto-detects a JavaScript config.
 
 **Typography** — `Inter` for body, `Playfair Display` for display headings, both
 as system stacks so there is no build-time or runtime font fetch. To self-host
@@ -466,12 +471,35 @@ specification, and why:
    gallery upload, page content and settings are bespoke where the interaction
    genuinely differs.
 
-9. **Next 15.5.27, not the 14.2.x line in the report.** The report predates the
-   Next.js security advisory; 14.2.35 is the patched 14.x release but that line
-   is frozen. 15.5.27 is the maintained backport, and `next lint` was replaced by
-   a direct `eslint` call since it is deprecated in 15.
+9. **Latest stable majors, not the versions in the report.** The report predates
+   several security releases and major upgrades. The app now runs Next 16.3.8,
+   React 19.3, Prisma 7.10, Tailwind 4.3, Zod 4, Jest 30 and ESLint 9. Prisma
+   8 was deliberately **not** taken: its `latest` tag is `8.0.0-rc.19`, a release
+   candidate. `next lint` and `middleware` are gone in 16, `next.config.js` no
+   longer accepts an `eslint` key, and `eslint-config-next` 16 ships flat config
+   only, so `.eslintrc.json` became `eslint.config.mjs`.
 
-10. **`getStaticProps` + ISR, with a database fallback.** Content that changes
+10. **Tailwind 4 is CSS-first.** `tailwind.config.js` is deleted; the tokens live
+    in `@theme` inside `styles/globals.css`, custom classes are `@utility`
+    blocks, and the PostCSS plugin moved to `@tailwindcss/postcss` (which also
+    handles prefixing, so `autoprefixer` was dropped). The v3 shadow scale names
+    are preserved via explicit `--shadow-*` variables, because v4 renamed them.
+
+11. **Prisma 7 needs a driver adapter.** Every client is built through
+    `PrismaMariaDb`, which takes a `mariadb.PoolConfig` — *not*
+    `{ connectionString }`, which it silently ignores and then fails to connect
+    with a pool timeout. The generated client also moved out of `node_modules`
+    into `generated/prisma` (gitignored), the CLI reads its datasource from
+    `prisma.config.mjs`, and `.env` is no longer auto-loaded (`dotenv/config`
+    is imported explicitly).
+
+12. **Transient MariaDB 1020 is retried.** With Prisma 7 routing queries
+    through the driver adapter, concurrent writes to one row surface MariaDB's
+    "Record has changed since last read". That is a stale read, not a data
+    problem, so `withWriteRetry` in `lib/auth.js` retries those writes (plus
+    deadlocks and lock timeouts) with jittered backoff.
+
+13. **`getStaticProps` + ISR, with a database fallback.** Content that changes
     rarely is revalidated every 5–10 minutes, and a database outage degrades to
     the bundled copy rather than a 500.
 
