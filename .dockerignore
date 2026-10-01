@@ -1,0 +1,42 @@
+# Build context exclusions — keep the Docker build fast and leak-free.
+
+# Dependencies and build output (rebuilt inside the image)
+node_modules
+.next
+out
+build
+
+# Secrets: the image takes them as runtime environment variables
+.env
+.env.local
+.env.*.local
+
+# VCS and CI
+.git
+.gitignore
+.github
+
+# Tests: they run in CI, not in the production image
+tests
+playwright.config.js
+jest.config.js
+coverage
+playwright-report
+test-results
+
+# Editor / OS noise
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Documentation and assets not needed at runtime
+*.md
+!README.md
+docs
+public/uploads/*
+
+# Local artefacts
+Dockerfile
+docker-compose.yml
+.dockerignore

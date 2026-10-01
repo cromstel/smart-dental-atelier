@@ -1,0 +1,193 @@
+# Kubernetes manifests for Dental Atelier.
+#
+#   1. cp k8s/secret.example.yaml k8s/secret.yaml   # fill in, never commit
+#   2. edit the ingress host below
+#   3. kubectl apply -f k8s/
+#
+# The database is expected to be managed externally (PlanetScale / RDS / your
+# own MySQL); it is deliberately not defined here.
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dental-atelier
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dental-atelier-config
+  namespace: dental-atelier
+data:
+  NEXTAUTH_URL: 'https://www.dentalatelier.co'
+  NEXT_PUBLIC_SITE_URL: 'https://www.dentalatelier.co'
+  NODE_ENV: 'production'
+  PORT: '3031'
+  # Extra origins allowed to POST to the public forms, comma separated.
+  # Empty means same-origin only.
+  ALLOWED_ORIGINS: ''
+  SMTP_HOST: ''
+  SMTP_PORT: '587'
+  SMTP_USER: ''
+  SMTP_PASSWORD: ''
+  NOTIFY_EMAIL: 'michal@dentalatelier.co'
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dental-atelier
+  namespace: dental-atelier
+  labels:
+    app.kubernetes.io/name: dental-atelier
+    app.kubernetes.io/component: web
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: dental-atelier
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: dental-atelier
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: web
+          image: ghcr.io/your-org/dental-atelier:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3031
+          envFrom:
+            - configMapRef:
+                name: dental-atelier-config
+            # DATABASE_URL, NEXTAUTH_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD
+            - secretRef:
+                name: dental-atelier-secrets
+          # Prisma needs a writable tmp for its engine extraction.
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            # Admin gallery uploads must survive a pod replacement.
+            - name: uploads
+              mountPath: /app/public/uploads
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: '1'
+              memory: 768Mi
+          # Readiness gates traffic; liveness restarts a wedged pod.
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: ['ALL']
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: dental-atelier-uploads
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dental-atelier
+  namespace: dental-atelier
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: dental-atelier
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+# TLS is terminated here; cert-manager annotates the Ingress to issue it.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dental-atelier
+  namespace: dental-atelier
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: '8m'
+    nginx.ingress.kubernetes.io/ssl-redirect: 'true'
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: ['www.dentalatelier.co']
+      secretName: dental-atelier-tls
+  rules:
+    - host: www.dentalatelier.co
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: dental-atelier
+                port:
+                  name: http
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dental-atelier-uploads
+  namespace: dental-atelier
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+---
+# Scale to zero on a schedule. Booking data lives in MySQL, so a scale-down only
+# costs the first request's cold start.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: dental-atelier
+  namespace: dental-atelier
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: dental-atelier
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+  behavior:
+    scaleDown:
+      # A patient booking form is not a latency-sensitive path; avoid flapping.
+      stabilizationWindowSeconds: 300

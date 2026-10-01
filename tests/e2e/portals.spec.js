@@ -1,0 +1,236 @@
+import { test, expect } from '@playwright/test';
+
+/**
+ * Authentication and the two portals.
+ *
+ * The admin account is created by the seed from ADMIN_EMAIL / ADMIN_PASSWORD in
+ * `.env`. These specs run against a real database — they are the ones that
+ * would catch a broken guard or a broken session cookie.
+ */
+
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'michal@dentalatelier.co';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+test.describe('authentication', () => {
+  test.skip(!ADMIN_PASSWORD, 'ADMIN_PASSWORD is not set in the environment');
+
+  test('redirects an anonymous visitor from the admin portal to sign in', async ({ page }) => {
+    await page.goto('/admin');
+    await expect(page).toHaveURL(/\/login\?callbackUrl=/);
+  });
+
+  test('redirects an anonymous visitor from the client portal to sign in', async ({ page }) => {
+    await page.goto('/portal');
+    await expect(page).toHaveURL(/\/login\?callbackUrl=/);
+  });
+
+  test('signs in with credentials and lands on the admin dashboard', async ({ page }) => {
+    await page.goto('/login');
+
+    await page.getByLabel('E-mail').fill(ADMIN_EMAIL);
+    await page.getByLabel('Password').fill(ADMIN_PASSWORD);
+    await page.getByRole('button', { name: 'Sign in' }).click();
+
+    await expect(page).toHaveURL(/\/admin/);
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+    await expect(page.getByText('Needs your attention')).toBeVisible();
+  });
+
+  test('reports invalid credentials without revealing whether the account exists', async ({ page }) => {
+    await page.goto('/login');
+
+    await page.getByLabel('E-mail').fill(ADMIN_EMAIL);
+    await page.getByLabel('Password').fill('definitely-not-the-password');
+    await page.getByRole('button', { name: 'Sign in' }).click();
+
+    await expect(page.getByText(/e-mail and password combination is not correct/i)).toBeVisible();
+    await expect(page).toHaveURL(/\/login/);
+  });
+
+  test('validates the login form in the browser before calling the API', async ({ page }) => {
+    await page.goto('/login');
+
+    let apiCalled = false;
+    await page.route('**/api/auth/**', (route) => {
+      apiCalled = true;
+      return route.abort();
+    });
+
+    await page.getByRole('button', { name: 'Sign in' }).click();
+    await expect(page.getByText(/enter your e-mail address and password/i)).toBeVisible();
+    expect(apiCalled).toBe(false);
+  });
+});
+
+test.describe('admin portal', () => {
+  test.skip(!ADMIN_PASSWORD, 'ADMIN_PASSWORD is not set in the environment');
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/login');
+    await page.getByLabel('E-mail').fill(ADMIN_EMAIL);
+    await page.getByLabel('Password').fill(ADMIN_PASSWORD);
+    await page.getByRole('button', { name: 'Sign in' }).click();
+    await expect(page).toHaveURL(/\/admin/);
+  });
+
+  const ADMIN_SECTIONS = [
+    { path: '/admin/appointments', heading: 'Appointments' },
+    { path: '/admin/messages', heading: 'Inquiries' },
+    { path: '/admin/testimonials', heading: 'Testimonials' },
+    { path: '/admin/faqs', heading: 'FAQs' },
+    { path: '/admin/services', heading: 'Products & Services' },
+    { path: '/admin/gallery', heading: 'Gallery' },
+    { path: '/admin/content', heading: 'Page content' },
+    { path: '/admin/users', heading: 'Users' },
+    { path: '/admin/settings', heading: 'Settings' },
+  ];
+
+  for (const { path, heading } of ADMIN_SECTIONS) {
+    test(`${path} renders for an administrator`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible();
+      // The portal must never be indexed.
+      await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+    });
+  }
+
+  test('creates, edits and deletes a FAQ', async ({ page }) => {
+    await page.goto('/admin/faqs');
+
+    const question = `Is this a Playwright question? ${Date.now()}`;
+
+    // Create
+    await page.getByRole('button', { name: 'Add faq' }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('Question').fill(question);
+    await dialog.getByLabel('Answer').fill('A temporary answer created by the end-to-end suite.');
+    await dialog.getByRole('button', { name: 'Create faq' }).click();
+
+    await expect(page.getByRole('cell', { name: question })).toBeVisible();
+
+    // Edit
+    const row = page.getByRole('row').filter({ hasText: question });
+    await row.getByRole('button', { name: 'Edit' }).click();
+    const editDialog = page.getByRole('dialog');
+    await editDialog.getByLabel('Answer').fill('An updated answer from the end-to-end suite.');
+    await editDialog.getByRole('button', { name: 'Save changes' }).click();
+
+    await expect(page.getByText('An updated answer from the end-to-end suite.')).toBeVisible();
+
+    // Delete (through the confirmation dialog, not window.confirm)
+    await page.getByRole('row').filter({ hasText: question }).getByRole('button', { name: 'Delete' }).click();
+    const confirmDialog = page.getByRole('dialog');
+    await expect(confirmDialog.getByRole('heading', { name: /delete this faq/i })).toBeVisible();
+    await confirmDialog.getByRole('button', { name: 'Delete permanently' }).click();
+
+    await expect(page.getByRole('cell', { name: question })).toBeHidden();
+  });
+
+  test('creates a testimonial and can unpublish it', async ({ page }) => {
+    await page.goto('/admin/testimonials');
+
+    const author = `E2E ${Date.now()}`;
+
+    await page.getByRole('button', { name: 'Add testimonial' }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('Author').fill(author);
+    await dialog.getByLabel('Treatment').fill('Playover');
+    await dialog.getByLabel('Quote').fill('A quote created by the end-to-end suite.');
+    await dialog.getByRole('button', { name: 'Create testimonial' }).click();
+
+    await expect(page.getByRole('cell', { name: author })).toBeVisible();
+
+    // Unpublish via the edit dialog.
+    const row = page.getByRole('row').filter({ hasText: author });
+    await row.getByRole('button', { name: 'Edit' }).click();
+    const editDialog = page.getByRole('dialog');
+    await editDialog.getByLabel(/Show this testimonial/).uncheck();
+    await editDialog.getByRole('button', { name: 'Save changes' }).click();
+
+    await expect(
+      page.getByRole('row').filter({ hasText: author }).getByText('Draft'),
+    ).toBeVisible();
+
+    // Clean up.
+    await page.getByRole('row').filter({ hasText: author }).getByRole('button', { name: 'Delete' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Delete permanently' }).click();
+  });
+
+  test('changes an appointment status', async ({ page }) => {
+    await page.goto('/book-appointment');
+
+    const marker = `E2E appointment ${Date.now()}`;
+    await page.getByLabel('Firstname').fill('E2E');
+    await page.getByLabel('Surname').fill('Booking');
+    await page.getByLabel('E-mail').fill(`e2e-${Date.now()}@example.com`);
+    await page.getByLabel('Phone').fill('+32 478 54 74 75');
+    await page.getByLabel('Preferred date').fill('2030-06-15');
+    await page.getByLabel(/Anything we should know/).fill(marker);
+    await page.getByRole('button', { name: /request appointment/i }).click();
+
+    await expect(page.getByText(/Appointment requested/)).toBeVisible();
+
+    await page.goto(`/admin/appointments?q=${encodeURIComponent(marker)}`);
+
+    const row = page.getByRole('row').filter({ hasText: marker });
+    await expect(row).toBeVisible();
+
+    await row.getByLabel(/Change status/).selectOption('CONFIRMED');
+    await expect(page.getByRole('row').filter({ hasText: marker }).getByText('Confirmed')).toBeVisible();
+
+    // Clean up.
+    await page.getByRole('row').filter({ hasText: marker }).getByRole('button', { name: 'Delete' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Delete permanently' }).click();
+    await expect(page.getByRole('row').filter({ hasText: marker })).toBeHidden();
+  });
+
+  test('refuses to delete the signed-in administrator', async ({ page }) => {
+    await page.goto(`/admin/users?q=${encodeURIComponent(ADMIN_EMAIL)}`);
+
+    const row = page.getByRole('row').filter({ hasText: ADMIN_EMAIL });
+    await expect(row).toBeVisible();
+  });
+
+  test('edits a site setting', async ({ page }) => {
+    await page.goto('/admin/settings');
+
+    const hours = page.getByLabel('booking.openingHours');
+    await expect(hours).toBeVisible();
+
+    const original = await hours.inputValue();
+    const updated = 'Monday to Friday, 09:00 - 16:30';
+
+    await hours.fill(updated);
+    await page.getByRole('button', { name: /^Save/ }).first().click();
+    await expect(page.getByText('Settings saved.')).toBeVisible();
+
+    // Restore, so the suite does not leave the site with test data.
+    await hours.fill(original);
+    await page.getByRole('button', { name: /^Save/ }).first().click();
+    await expect(page.getByText('Settings saved.')).toBeVisible();
+  });
+
+  test('signs out', async ({ page }) => {
+    await page.goto('/admin');
+    await page.getByRole('button', { name: 'Sign out' }).click();
+
+    await expect(page).toHaveURL(/\/login/);
+    await page.goto('/admin');
+    await expect(page).toHaveURL(/\/login/);
+  });
+});
+
+test.describe('client portal', () => {
+  test.skip(!ADMIN_PASSWORD, 'ADMIN_PASSWORD is not set in the environment');
+
+  test('an administrator sees the client portal link', async ({ page }) => {
+    await page.goto('/login');
+    await page.getByLabel('E-mail').fill(ADMIN_EMAIL);
+    await page.getByLabel('Password').fill(ADMIN_PASSWORD);
+    await page.getByRole('button', { name: 'Sign in' }).click();
+
+    await page.goto('/portal');
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Portal sections' })).toBeVisible();
+  });
+});

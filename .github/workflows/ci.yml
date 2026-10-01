@@ -1,0 +1,186 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# A new push to the same branch supersedes the previous run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Lint, build and test
+    runs-on: ubuntu-latest
+
+    services:
+      # MySQL for the integration-ish tests and the build's static generation.
+      # `prisma migrate deploy` needs CREATE DATABASE for its shadow database,
+      # so the service user is granted global rights rather than schema-only.
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: dental_atelier
+          MYSQL_USER: dental_atelier
+          MYSQL_PASSWORD: dental_atelier
+          MYSQL_ROOT_PASSWORD: root_change_me
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot_change_me"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+
+    env:
+      DATABASE_URL: mysql://dental_atelier:dental_atelier@127.0.0.1:3306/dental_atelier
+      NEXTAUTH_URL: http://127.0.0.1:3031
+      NEXTAUTH_SECRET: ci-only-secret-not-used-anywhere-real
+      ADMIN_EMAIL: ci@dentalatelier.local
+      ADMIN_PASSWORD: CiAdminPassword-2026
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3031
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      # Grants CREATE DATABASE to the service user, which `prisma migrate dev`
+      # requires for its shadow database.
+      - name: Allow the service user to create databases
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -uroot -proot_change_me <<'SQL'
+            GRANT ALL PRIVILEGES ON *.* TO 'dental_atelier'@'%';
+            FLUSH PRIVILEGES;
+          SQL
+
+      - name: Verify the Prisma schema
+        run: npx prisma validate
+
+      - name: Check formatting of generated artefacts
+        run: npx prisma format --check
+
+      - name: Generate the Prisma client
+        run: npx prisma generate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit and API tests
+        run: npm test -- --ci --coverage
+
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+
+      - name: Seed content
+        run: npm run db:seed
+
+      - name: Build
+        run: npm run build
+
+      - name: Smoke-test the production server
+        run: |
+          npm start &
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:3031/api/health > /tmp/health.json; then
+              break
+            fi
+            sleep 2
+          done
+          cat /tmp/health.json
+          curl -sf http://127.0.0.1:3031/api/health | grep -q '"database":"ok"'
+          for path in / /about-us /services /faqs /contact-us /portfolio /sitemap.xml /robots.txt; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:3031$path")
+            echo "$path -> $code"
+            test "$code" = "200"
+          done
+          # Admin surfaces must not be crawlable.
+          curl -s -D - -o /dev/null http://127.0.0.1:3031/admin | grep -qi 'x-robots-tag: noindex'
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 7
+
+  e2e:
+    name: End-to-end (Playwright)
+    runs-on: ubuntu-latest
+    needs: verify
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: dental_atelier
+          MYSQL_USER: dental_atelier
+          MYSQL_PASSWORD: dental_atelier
+          MYSQL_ROOT_PASSWORD: root_change_me
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot_change_me"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+
+    env:
+      DATABASE_URL: mysql://dental_atelier:dental_atelier@127.0.0.1:3306/dental_atelier
+      NEXTAUTH_URL: http://127.0.0.1:3031
+      NEXTAUTH_SECRET: ci-only-secret-not-used-anywhere-real
+      ADMIN_EMAIL: ci@dentalatelier.local
+      ADMIN_PASSWORD: CiAdminPassword-2026
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3031
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Allow the service user to create databases
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -uroot -proot_change_me <<'SQL'
+            GRANT ALL PRIVILEGES ON *.* TO 'dental_atelier'@'%';
+            FLUSH PRIVILEGES;
+          SQL
+
+      - name: Generate the Prisma client, migrate and seed
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+          npm run db:seed
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      # webServer in playwright.config.js runs `npm start`, which binds 3031.
+      - name: Run the E2E suite
+        run: npx playwright test
+
+      - name: Upload the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
