@@ -6,12 +6,29 @@
  * Interactive when no flags are given. Used when the studio needs a second
  * administrator without touching the seed, or to reset a forgotten password.
  */
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/prisma/client.js';
+import { PrismaMariaDb } from '@prisma/adapter-mariadb';
+import 'dotenv/config';
 import bcrypt from 'bcryptjs';
 import readline from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 
-const prisma = new PrismaClient();
+/**
+ * Prisma 7 requires a driver adapter. The adapter takes a `mariadb.PoolConfig`
+ * or a connection string — NOT `{ connectionString }`.
+ */
+const databaseUrl = new URL(process.env.DATABASE_URL);
+const prisma = new PrismaClient({
+  adapter: new PrismaMariaDb({
+    host: databaseUrl.hostname,
+    port: Number(databaseUrl.port || 3306),
+    user: decodeURIComponent(databaseUrl.username),
+    password: decodeURIComponent(databaseUrl.password),
+    database: databaseUrl.pathname.replace(/^\//, ''),
+    connectionLimit: 1,
+    connectTimeout: 5000,
+  }),
+});
 
 function arg(name, fallback = null) {
   const index = process.argv.indexOf(`--${name}`);

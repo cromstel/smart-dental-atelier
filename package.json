@@ -4,7 +4,7 @@
   "private": true,
   "description": "Dental Atelier - a state-of-the-art dental laboratory. Next.js + Tailwind + Prisma/MySQL + NextAuth, with an admin portal and a client portal.",
   "engines": {
-    "node": ">=18.17"
+    "node": ">=20.19.0"
   },
   "scripts": {
     "dev": "next dev -p 3031",
@@ -17,22 +17,24 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:seed": "node prisma/seed.mjs",
-    "db:reset": "prisma migrate reset --force && npm run db:seed",
+    "db:seed": "tsx prisma/seed.mjs",
+    "db:reset": "prisma migrate reset --force && tsx prisma/seed.mjs",
     "db:studio": "prisma studio",
-    "create-admin": "node scripts/create-admin.mjs"
+    "create-admin": "tsx scripts/create-admin.mjs"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"
   },
   "dependencies": {
-    "@prisma/client": "5.19.1",
+    "@prisma/adapter-mariadb": "7.10.0",
+    "@prisma/client": "7.10.0",
     "bcryptjs": "3.0.3",
     "formidable": "3.5.4",
     "next": "16.3.8",
     "next-auth": "4.24.15",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "tsx": "4.23.15"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
@@ -41,14 +43,14 @@
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
     "@testing-library/user-event": "14.6.7",
-    "autoprefixer": "10.6.1",
+    "dotenv": "18.0.5",
     "eslint": "9.39.5",
     "eslint-config-next": "16.3.8",
     "jest": "30.5.2",
     "jest-environment-jsdom": "30.5.2",
     "postcss": "8.5.28",
-    "prisma": "5.19.1",
-    "tailwindcss": "3.4.13",
+    "prisma": "7.10.0",
+    "tailwindcss": "4.3.3",
     "zod": "4.6.5"
   }
 }

@@ -12,14 +12,22 @@
 //   * Auth: User/Account/Session/VerificationToken for NextAuth + Credentials
 // ---------------------------------------------------------------------------
 
+// Prisma 7 replaces the `prisma-client-js` generator with the Rust-free
+// `prisma-client` generator, and requires an explicit `output` path — the
+// client is no longer generated into node_modules. The generated module is
+// committed to `.gitignore` and imported as `@/generated/prisma/client` in
+// `lib/prisma.js`.
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native"]
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+  runtime  = "nodejs"
+  moduleFormat = "esm"
 }
 
 datasource db {
   provider = "mysql"
-  url      = env("DATABASE_URL")
+  // The connection URL lives in prisma.config.ts (v7 requirement); the CLI and
+  // the driver adapter both read it from there.
 }
 
 // ------------------------------- Enums -------------------------------------

@@ -48,3 +48,6 @@ public/uploads/*
 
 # generated types
 /prisma/generated
+# Prisma 7 generated client (regenerate with 
+px prisma generate)
+generated/

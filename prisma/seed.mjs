@@ -12,7 +12,9 @@
  * file is the single canonical copy of the site's text, shared with the pages
  * and with the fallback content layer.
  */
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/prisma/client.js';
+import { PrismaMariaDb } from '@prisma/adapter-mariadb';
+import 'dotenv/config';
 import bcrypt from 'bcryptjs';
 import {
   SITE,
@@ -29,7 +31,22 @@ import {
   DIRECTIONS,
 } from '../lib/content.js';
 
-const prisma = new PrismaClient();
+/**
+ * Prisma 7 requires a driver adapter. The adapter takes a `mariadb.PoolConfig`
+ * or a connection string — NOT `{ connectionString }`, which the driver ignores
+ * and then fails to connect with a pool timeout.
+ */
+const prisma = new PrismaClient({
+  adapter: new PrismaMariaDb({
+    host: new URL(process.env.DATABASE_URL).hostname,
+    port: Number(new URL(process.env.DATABASE_URL).port || 3306),
+    user: decodeURIComponent(new URL(process.env.DATABASE_URL).username),
+    password: decodeURIComponent(new URL(process.env.DATABASE_URL).password),
+    database: new URL(process.env.DATABASE_URL).pathname.replace(/^\//, ''),
+    connectionLimit: 5,
+    connectTimeout: 5000,
+  }),
+});
 
 /** Create, or fill in a field that is currently empty. */
 async function upsertEmpty(model, where, create, patch) {
