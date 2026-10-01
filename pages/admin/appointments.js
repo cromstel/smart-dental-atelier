@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import AdminShell from '@/components/admin/AdminShell';
 import DataTable from '@/components/admin/DataTable';
 import StatusBadge from '@/components/admin/StatusBadge';
@@ -35,13 +35,16 @@ export default function AdminAppointmentsPage({ appointments = [], total, page, 
   const [busyId, setBusyId] = useState(null);
   const [notesDraft, setNotesDraft] = useState({});
 
+  /**
+   * Re-run `getServerSideProps`. Any unsaved note text is dropped at the same
+   * time, in the same event that fetches the new rows — previously this was an
+   * effect keyed on `appointments`, which set state synchronously during the
+   * commit phase and cost an extra render pass on every list refresh.
+   */
   const refresh = useCallback(() => {
+    setNotesDraft({});
     router.replace(router.asPath, undefined, { scroll: false });
   }, [router]);
-
-  useEffect(() => {
-    setNotesDraft({});
-  }, [appointments]);
 
   const update = async (id, changes) => {
     setBusyId(id);

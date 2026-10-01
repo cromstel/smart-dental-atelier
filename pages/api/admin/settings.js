@@ -42,7 +42,6 @@ export default apiHandler(async (req, res) => {
     const saved = [];
     for (const entry of entries) {
       // Sequential so `updatedAt` reflects the write order and MySQL is happy.
-      // eslint-disable-next-line no-await-in-loop
       saved.push(
         await prisma.setting.upsert({
           where: { key: entry.key },

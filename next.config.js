@@ -30,11 +30,16 @@ const nextConfig = {
     imageSizes: [64, 96, 128, 256, 384],
     // Remote originals are only used by the migration script, never at runtime.
     remotePatterns: [],
+    // v16 narrowed the default to [75]; keep a range so the upload-generated
+    // gallery thumbnails are not silently coerced.
+    qualities: [50, 75, 90, 100],
+    // v16 raised the default from 60s to 4h. These are build-time assets that
+    // change only when re-uploaded, so the longer default is appropriate.
+    minimumCacheTTL: 14400,
   },
 
-  eslint: {
-    dirs: ['pages', 'components', 'lib', 'utils'],
-  },
+  // The `eslint` config key was removed in Next 16 (`next lint` is gone too);
+  // linting now runs through eslint.config.mjs via the `lint` script.
 
   async headers() {
     return [

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
@@ -28,17 +28,26 @@ export default function LoginPage() {
   const callbackUrl = typeof router.query.callbackUrl === 'string' ? router.query.callbackUrl : '/portal';
 
   const [values, setValues] = useState({ email: '', password: '' });
-  const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (router.query.error) {
-      setError(ERROR_COPY[String(router.query.error)] || ERROR_COPY.Default);
-    }
-    if (router.query.error === 'inactive') {
-      setError('This account has been deactivated. Please contact the studio.');
-    }
-  }, [router.query.error]);
+  /**
+   * The error coming from the URL is derived state, so it is computed during
+   * render rather than stored and synced by an effect. NextAuth redirects back
+   * to `?error=...`, and deriving it means there is no intermediate render with
+   * a stale message — and no setState-in-effect.
+   */
+  const urlError = router.query.error ? String(router.query.error) : null;
+  const error =
+    urlError === 'inactive'
+      ? 'This account has been deactivated. Please contact the studio.'
+      : urlError
+        ? ERROR_COPY[urlError] || ERROR_COPY.Default
+        : '';
+
+  // Submit-time failures are local state and must not be overwritten by the
+  // derived value above, so they are kept separately.
+  const [submitError, setSubmitError] = useState('');
+  const displayedError = submitError || error;
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -47,10 +56,10 @@ export default function LoginPage() {
 
   const onSubmit = async (event) => {
     event.preventDefault();
-    setError('');
+    setSubmitError('');
 
     if (!values.email || !values.password) {
-      setError('Please enter your e-mail address and password.');
+      setSubmitError('Please enter your e-mail address and password.');
       return;
     }
 
@@ -64,7 +73,7 @@ export default function LoginPage() {
     setSubmitting(false);
 
     if (result?.error) {
-      setError(ERROR_COPY[result.error] || ERROR_COPY.Default);
+      setSubmitError(ERROR_COPY[result.error] || ERROR_COPY.Default);
       return;
     }
 
@@ -93,9 +102,9 @@ export default function LoginPage() {
             </p>
 
             <form onSubmit={onSubmit} noValidate className="mt-8 space-y-5">
-              {error ? (
-                <Alert tone="error" title="Sign-in failed" onDismiss={() => setError('')}>
-                  {error}
+              {displayedError ? (
+                <Alert tone="error" title="Sign-in failed" onDismiss={() => setSubmitError('')}>
+                  {displayedError}
                 </Alert>
               ) : null}
 

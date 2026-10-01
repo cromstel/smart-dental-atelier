@@ -9,7 +9,11 @@ import { Html, Head, Main, NextScript } from 'next/document';
  */
 export default function Document() {
   return (
-    <Html lang="en" className="dark">
+    // `data-scroll-behavior="smooth"` opts back in to Next overriding
+    // scroll-behavior during client-side navigations. Without it, v16 leaves
+    // our global `scroll-behavior: smooth` in place and every route change
+    // animates instead of jumping.
+    <Html lang="en" className="dark" data-scroll-behavior="smooth">
       <Head>
         <meta charSet="utf-8" />
         <link rel="preconnect" href="https://www.google.com" crossOrigin="" />
