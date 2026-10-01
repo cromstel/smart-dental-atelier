@@ -164,7 +164,7 @@ export default function AdminContentPage({ pages = [] }) {
               Edit /{editing}
             </h2>
 
-            <form onSubmit={save} noValidate className="mt-8 space-y-5">
+            <form method="post" onSubmit={save} noValidate className="mt-8 space-y-5">
               <FormInput
                 label="Page title"
                 name="title"

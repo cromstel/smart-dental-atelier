@@ -113,7 +113,7 @@ describe('POST /api/contact', () => {
     const { status } = await callApi(contactHandler, {
       method: 'POST',
       body: validContact,
-      headers: { host: 'localhost:3031', origin: 'https://evil.example' },
+      headers: { host: 'localhost:3005', origin: 'https://evil.example' },
     });
 
     expect(status).toBe(403);

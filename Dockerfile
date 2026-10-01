@@ -11,7 +11,7 @@
 # Build:
 #   docker build -t dental-atelier .
 # Run (Compose does this for you):
-#   docker run -p 3031:3031 --env-file .env.production dental-atelier
+#   docker run -p 3005:3005 --env-file .env.production dental-atelier
 
 # Prisma 7 requires Node 20.19+ / 22.12+ / 24+, so every stage pins 24.
 ARG NODE_VERSION=24
@@ -61,7 +61,7 @@ RUN apk add --no-cache libc6-compat openssl wget \
 
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
-    PORT=3031 \
+    PORT=3005 \
     HOSTNAME=0.0.0.0
 
 # `public` is copied separately because it is also bind-mounted in production
@@ -80,9 +80,9 @@ RUN mkdir -p /app/public/uploads /app/.tmp-uploads \
 VOLUME ["/app/public/uploads"]
 
 USER nextjs
-EXPOSE 3031
+EXPOSE 3005
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:3031/api/health || exit 1
+  CMD wget -qO- http://127.0.0.1:3005/api/health || exit 1
 
 CMD ["node", "server.js"]

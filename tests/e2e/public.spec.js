@@ -5,6 +5,17 @@ import { test, expect } from '@playwright/test';
  * These are the flows a visitor actually performs.
  */
 
+/**
+ * Waits until the Pages Router has hydrated.
+ *
+ * A form is only submitted by React once the client bundle has run; clicking
+ * earlier falls through to the browser's native submit, which just reloads the
+ * page. Every test that fills and submits a form waits for this first.
+ */
+async function waitForHydration(page) {
+  await page.waitForFunction(() => Boolean(window.next?.router));
+}
+
 test.describe('public site', () => {
   test('renders the home page with the brand palette and a single H1', async ({ page }) => {
     await page.goto('/');
@@ -79,6 +90,7 @@ test.describe('public site', () => {
   test('opens the mobile navigation with the keyboard', async ({ page }) => {
     await page.goto('/');
     await page.setViewportSize({ width: 390, height: 844 });
+    await waitForHydration(page);
 
     const toggle = page.getByRole('button', { name: /open menu/i });
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
@@ -99,6 +111,7 @@ test.describe('public site', () => {
 
   test('expands and collapses an FAQ', async ({ page }) => {
     await page.goto('/faqs');
+    await waitForHydration(page);
 
     const question = page.getByRole('button', { name: /What is a crown/ });
     await expect(question).toHaveAttribute('aria-expanded', 'false');
@@ -110,6 +123,7 @@ test.describe('public site', () => {
 
   test('searches the FAQ list', async ({ page }) => {
     await page.goto('/faqs');
+    await waitForHydration(page);
 
     await page.getByLabel(/search the frequently asked questions/i).fill('implant');
     await expect(page.getByText(/What is an implant crown\?/)).toBeVisible();
@@ -132,6 +146,7 @@ test.describe('public site', () => {
 
   test('rejects an empty contact form without calling the API', async ({ page }) => {
     await page.goto('/contact-us');
+    await waitForHydration(page);
 
     let apiCalled = false;
     await page.route('**/api/contact', (route) => {
@@ -148,6 +163,7 @@ test.describe('public site', () => {
 
   test('sends the contact form and confirms receipt', async ({ page }) => {
     await page.goto('/contact-us');
+    await waitForHydration(page);
 
     // Stub the API so the suite does not depend on a writable database.
     await page.route('**/api/contact', (route) =>
@@ -170,8 +186,10 @@ test.describe('public site', () => {
 
   test('ticks smile-check questions and submits', async ({ page }) => {
     await page.goto('/smile-check-form');
+    await waitForHydration(page);
 
-    await expect(page.getByRole('button', { name: /Are your teeth crooked/ })).toBeVisible();
+    // The questions are checkboxes, not buttons — assert on the label.
+    await expect(page.getByLabel(/Are your teeth crooked/)).toBeVisible();
 
     await page.route('**/api/smile-check', (route) =>
       route.fulfill({
@@ -190,7 +208,9 @@ test.describe('public site', () => {
     await page.getByLabel(/E-mail/).fill('e2e@example.com');
     await page.getByRole('button', { name: /submit smile check/i }).click();
 
-    await expect(page.getByText(/smile check/)).toBeVisible();
+    // The mocked response's message, not a bare /smile check/ — that also matches
+// the H1, the legend and the submit button, so it is not a usable locator.
+await expect(page.getByText('Thank you. We received your smile check.')).toBeVisible();
   });
 
   test('every image has an alt attribute', async ({ page }) => {

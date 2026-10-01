@@ -60,7 +60,7 @@ export default apiHandler(
     // configured; the preview log makes the token discoverable in dev.
     console.info(
       `[newsletter] confirmation link: ${
-        process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3031'
+        process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3005'
       }/api/newsletter/unsubscribe?token=${token}`,
     );
 

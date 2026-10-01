@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+﻿import { test, expect } from '@playwright/test';
 
 /**
  * Authentication and the two portals.
@@ -10,6 +10,30 @@ import { test, expect } from '@playwright/test';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'michal@dentalatelier.co';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+/**
+ * Waits until the Pages Router has hydrated.
+ *
+ * `onSubmit` only stops the browser's native submit once React has taken over.
+ * Filling and clicking a form before that submits it natively, which just
+ * reloads the page and looks exactly like a rejected submission.
+ */
+async function waitForHydration(page) {
+  // `window.next.router` only exists once the client bundle has run.
+  await page.waitForFunction(() => Boolean(window.next?.router));
+}
+
+/**
+ * Signs in through the real form.
+ */
+async function signIn(page) {
+  await page.goto('/login');
+  await waitForHydration(page);
+
+  await page.getByLabel('E-mail').fill(ADMIN_EMAIL);
+  await page.getByLabel('Password').fill(ADMIN_PASSWORD);
+  await page.getByRole('button', { name: 'Sign in' }).click();
+}
 
 test.describe('authentication', () => {
   test.skip(!ADMIN_PASSWORD, 'ADMIN_PASSWORD is not set in the environment');
@@ -25,11 +49,7 @@ test.describe('authentication', () => {
   });
 
   test('signs in with credentials and lands on the admin dashboard', async ({ page }) => {
-    await page.goto('/login');
-
-    await page.getByLabel('E-mail').fill(ADMIN_EMAIL);
-    await page.getByLabel('Password').fill(ADMIN_PASSWORD);
-    await page.getByRole('button', { name: 'Sign in' }).click();
+    await signIn(page);
 
     await expect(page).toHaveURL(/\/admin/);
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
@@ -38,6 +58,7 @@ test.describe('authentication', () => {
 
   test('reports invalid credentials without revealing whether the account exists', async ({ page }) => {
     await page.goto('/login');
+    await waitForHydration(page);
 
     await page.getByLabel('E-mail').fill(ADMIN_EMAIL);
     await page.getByLabel('Password').fill('definitely-not-the-password');
@@ -49,6 +70,7 @@ test.describe('authentication', () => {
 
   test('validates the login form in the browser before calling the API', async ({ page }) => {
     await page.goto('/login');
+    await waitForHydration(page);
 
     let apiCalled = false;
     await page.route('**/api/auth/**', (route) => {
@@ -66,10 +88,7 @@ test.describe('admin portal', () => {
   test.skip(!ADMIN_PASSWORD, 'ADMIN_PASSWORD is not set in the environment');
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('/login');
-    await page.getByLabel('E-mail').fill(ADMIN_EMAIL);
-    await page.getByLabel('Password').fill(ADMIN_PASSWORD);
-    await page.getByRole('button', { name: 'Sign in' }).click();
+    await signIn(page);
     await expect(page).toHaveURL(/\/admin/);
   });
 
@@ -158,25 +177,37 @@ test.describe('admin portal', () => {
 
   test('changes an appointment status', async ({ page }) => {
     await page.goto('/book-appointment');
+    await waitForHydration(page);
 
     const marker = `E2E appointment ${Date.now()}`;
+    // Unique per run, and the admin search covers the e-mail column (not notes).
+    const email = `e2e-${Date.now()}@example.com`;
+
     await page.getByLabel('Firstname').fill('E2E');
     await page.getByLabel('Surname').fill('Booking');
-    await page.getByLabel('E-mail').fill(`e2e-${Date.now()}@example.com`);
+    await page.getByLabel('E-mail').fill(email);
     await page.getByLabel('Phone').fill('+32 478 54 74 75');
     await page.getByLabel('Preferred date').fill('2030-06-15');
     await page.getByLabel(/Anything we should know/).fill(marker);
+
+    // The public API treats a submission made within two seconds of the form
+    // appearing as a bot: it answers 200 with the success copy but stores
+    // nothing (`isTooFast` in lib/api.js). Playwright can fill the whole form
+    // that fast, so wait past the floor or the row never exists.
+    await page.waitForTimeout(2_200);
+
     await page.getByRole('button', { name: /request appointment/i }).click();
 
     await expect(page.getByText(/Appointment requested/)).toBeVisible();
 
-    await page.goto(`/admin/appointments?q=${encodeURIComponent(marker)}`);
+    await page.goto(`/admin/appointments?q=${encodeURIComponent(email)}`);
 
     const row = page.getByRole('row').filter({ hasText: marker });
     await expect(row).toBeVisible();
 
     await row.getByLabel(/Change status/).selectOption('CONFIRMED');
-    await expect(page.getByRole('row').filter({ hasText: marker }).getByText('Confirmed')).toBeVisible();
+    // Scope to the badge: the select's <option> carries the same text.
+    await expect(row.locator('span').filter({ hasText: /^Confirmed$/ })).toBeVisible();
 
     // Clean up.
     await page.getByRole('row').filter({ hasText: marker }).getByRole('button', { name: 'Delete' }).click();
@@ -212,6 +243,7 @@ test.describe('admin portal', () => {
 
   test('signs out', async ({ page }) => {
     await page.goto('/admin');
+    await waitForHydration(page);
     await page.getByRole('button', { name: 'Sign out' }).click();
 
     await expect(page).toHaveURL(/\/login/);
@@ -224,10 +256,8 @@ test.describe('client portal', () => {
   test.skip(!ADMIN_PASSWORD, 'ADMIN_PASSWORD is not set in the environment');
 
   test('an administrator sees the client portal link', async ({ page }) => {
-    await page.goto('/login');
-    await page.getByLabel('E-mail').fill(ADMIN_EMAIL);
-    await page.getByLabel('Password').fill(ADMIN_PASSWORD);
-    await page.getByRole('button', { name: 'Sign in' }).click();
+    await signIn(page);
+    await expect(page).toHaveURL(/\/admin/);
 
     await page.goto('/portal');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();

@@ -53,7 +53,7 @@ export default function SmileCheckForm({ questions = [], endpoint = '/api/smile-
   const anyChecked = answers.length > 0;
 
   return (
-    <form onSubmit={form.submit} noValidate className={className}>
+    <form method="post" onSubmit={form.submit} noValidate className={className}>
       <div aria-live="polite">
         {form.isSuccess ? (
           <Alert tone="success" className="mb-8" title="Thank you">

@@ -8,10 +8,10 @@
  */
 
 /**
- * The app listens on 3031 (see the `dev` / `start` scripts in package.json).
+ * The app listens on 3005 (see the `dev` / `start` scripts in package.json).
  * Exported so the Playwright config cannot drift from it.
  */
-const PORT = 3031;
+const PORT = 3005;
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {

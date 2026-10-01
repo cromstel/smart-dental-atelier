@@ -78,8 +78,8 @@ function multipartRequest({ fields = {}, file, mimetype = 'image/jpeg', filename
   const req = Readable.from([body]);
   req.method = 'POST';
   req.headers = {
-    host: 'localhost:3031',
-    origin: 'http://localhost:3031',
+    host: 'localhost:3005',
+    origin: 'http://localhost:3005',
     'content-type': `multipart/form-data; boundary=${boundary}`,
     'content-length': String(body.length),
   };
