@@ -86,7 +86,7 @@ export default function AdminShell({ title, description, actions, children, wide
                 <span className="hidden text-xs text-silver-400 sm:inline">{session.user.email}</span>
                 <button
                   type="button"
-                  onClick={() => signOut({ callbackUrl: '/login' })}
+                  onClick={() => signOut({ callbackUrl: '/auth/login' })}
                   className="rounded-md border border-white/15 px-3 py-1.5 text-xs text-silver-300 transition hover:border-brand-400/50 hover:text-brand-200"
                 >
                   Sign out

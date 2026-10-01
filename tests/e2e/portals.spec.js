@@ -25,39 +25,55 @@ async function waitForHydration(page) {
 
 /**
  * Signs in through the real form.
+ *
+ * Signing in is not a fast DOM change: it verifies a bcrypt hash and writes
+ * `lastLoginAt` twice (once in `authorize`, once in the `signIn` event) before
+ * the full-page navigation lands. On a loaded machine that regularly exceeds the
+ * suite's 10 s default, so the navigation gets its own, longer budget.
  */
 async function signIn(page) {
-  await page.goto('/login');
+  await page.goto('/auth/login');
   await waitForHydration(page);
 
   await page.getByLabel('E-mail').fill(ADMIN_EMAIL);
   await page.getByLabel('Password').fill(ADMIN_PASSWORD);
   await page.getByRole('button', { name: 'Sign in' }).click();
+
+  await expect(page).toHaveURL(/\/admin|\/portal/, { timeout: SIGN_IN_TIMEOUT });
 }
+
+const SIGN_IN_TIMEOUT = 30_000;
 
 test.describe('authentication', () => {
   test.skip(!ADMIN_PASSWORD, 'ADMIN_PASSWORD is not set in the environment');
 
   test('redirects an anonymous visitor from the admin portal to sign in', async ({ page }) => {
     await page.goto('/admin');
-    await expect(page).toHaveURL(/\/login\?callbackUrl=/);
+    await expect(page).toHaveURL(/\/auth\/login\?callbackUrl=/);
   });
 
   test('redirects an anonymous visitor from the client portal to sign in', async ({ page }) => {
     await page.goto('/portal');
-    await expect(page).toHaveURL(/\/login\?callbackUrl=/);
+    await expect(page).toHaveURL(/\/auth\/login\?callbackUrl=/);
+  });
+
+  test('sends the legacy /login URL to /auth/login, keeping callbackUrl', async ({ page }) => {
+    // Bookmarks and inbound links still point at /login.
+    await page.goto('/login?callbackUrl=/portal');
+    await expect(page).toHaveURL(/\/auth\/login\?callbackUrl=%2Fportal/);
+    await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
   });
 
   test('signs in with credentials and lands on the admin dashboard', async ({ page }) => {
     await signIn(page);
 
-    await expect(page).toHaveURL(/\/admin/);
+    await expect(page).toHaveURL(/\/admin/, { timeout: 30_000 });
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
     await expect(page.getByText('Needs your attention')).toBeVisible();
   });
 
   test('reports invalid credentials without revealing whether the account exists', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/auth/login');
     await waitForHydration(page);
 
     await page.getByLabel('E-mail').fill(ADMIN_EMAIL);
@@ -65,11 +81,11 @@ test.describe('authentication', () => {
     await page.getByRole('button', { name: 'Sign in' }).click();
 
     await expect(page.getByText(/e-mail and password combination is not correct/i)).toBeVisible();
-    await expect(page).toHaveURL(/\/login/);
+    await expect(page).toHaveURL(/\/auth\/login/);
   });
 
   test('validates the login form in the browser before calling the API', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/auth/login');
     await waitForHydration(page);
 
     let apiCalled = false;
@@ -89,7 +105,7 @@ test.describe('admin portal', () => {
 
   test.beforeEach(async ({ page }) => {
     await signIn(page);
-    await expect(page).toHaveURL(/\/admin/);
+    await expect(page).toHaveURL(/\/admin/, { timeout: SIGN_IN_TIMEOUT });
   });
 
   const ADMIN_SECTIONS = [
@@ -246,9 +262,9 @@ test.describe('admin portal', () => {
     await waitForHydration(page);
     await page.getByRole('button', { name: 'Sign out' }).click();
 
-    await expect(page).toHaveURL(/\/login/);
+    await expect(page).toHaveURL(/\/auth\/login/);
     await page.goto('/admin');
-    await expect(page).toHaveURL(/\/login/);
+    await expect(page).toHaveURL(/\/auth\/login\?callbackUrl=/);
   });
 });
 
@@ -257,7 +273,7 @@ test.describe('client portal', () => {
 
   test('an administrator sees the client portal link', async ({ page }) => {
     await signIn(page);
-    await expect(page).toHaveURL(/\/admin/);
+    await expect(page).toHaveURL(/\/admin/, { timeout: SIGN_IN_TIMEOUT });
 
     await page.goto('/portal');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();

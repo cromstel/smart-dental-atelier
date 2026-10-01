@@ -62,11 +62,15 @@ const nextConfig = {
       },
       {
         // The admin portal must never be indexed, and neither must auth pages.
-        source: '/:path(portal|admin|login|api)/:path*',
+        source: '/:path(portal|admin|auth|api)/:path*',
         headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
       },
     ];
   },
+
+  // The legacy `/login` -> `/auth/login` redirect lives in
+  // `pages/login.js`, not here: Next does not forward query strings across a
+  // `redirects()` entry, and `callbackUrl` / `error` both have to survive.
 };
 
 /**

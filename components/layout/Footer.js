@@ -83,7 +83,7 @@ export default function Footer({ address, phone, email, copyright }) {
               </Link>
             </li>
             <li>
-              <Link href="/login" className="link-underline">
+              <Link href="/auth/login" className="link-underline">
                 Sign in
               </Link>
             </li>

@@ -20,7 +20,7 @@ const PORT = nextConfig.PORT || 3005;
 /**
  * NextAuth sets its CSRF cookie for `NEXTAUTH_URL`'s host. If the suite browses
  * a different origin, sign-in fails with a CSRF mismatch and the login tests
- * bounce back to `/login`. The origin therefore comes from `NEXTAUTH_URL`, with
+ * bounce back to `/auth/login`. The origin comes from `NEXTAUTH_URL`, with
  * `.env` read here because Playwright does not load it for us.
  */
 function nextAuthOrigin() {

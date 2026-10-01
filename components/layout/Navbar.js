@@ -93,7 +93,7 @@ export default function Navbar({ menuItems = NAV_ITEMS, variant = 'light' }) {
                 </button>
               </>
             ) : (
-              <Link href="/login" className="link-underline">
+              <Link href="/auth/login" className="link-underline">
                 Client sign in
               </Link>
             )}
@@ -198,7 +198,7 @@ export default function Navbar({ menuItems = NAV_ITEMS, variant = 'light' }) {
             </Link>
           </li>
           <li className="pb-4 text-xs text-silver-500">
-            <Link href="/login" className="link-underline">
+            <Link href="/auth/login" className="link-underline">
               Client sign in
             </Link>
           </li>

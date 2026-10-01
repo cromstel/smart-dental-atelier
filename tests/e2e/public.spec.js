@@ -77,7 +77,7 @@ test.describe('public site', () => {
     expect(xml).toContain('<urlset');
     expect(xml).toContain('/about-us');
     expect(xml).not.toContain('/admin');
-    expect(xml).not.toContain('/login');
+    expect(xml).not.toContain('/auth');
   });
 
   test('serves a robots.txt that blocks the portals', async ({ request }) => {
