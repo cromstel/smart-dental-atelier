@@ -41,7 +41,13 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # `prisma generate` must run after the schema is present.
-RUN npx prisma generate
+#
+# Prisma 7 resolves the datasource URL through `prisma.config.mjs`, which calls
+# `env('DATABASE_URL')` at module load. That throws if the variable is unset —
+# even though `generate` never connects to anything — so the placeholder below
+# is required for the build to work at all. It is not a real credential.
+RUN DATABASE_URL="mysql://build:build@127.0.0.1:3306/build" \
+    npx prisma generate
 
 # `next build` reads DATABASE_URL/NEXTAUTH_SECRET only if the build itself
 # needs them; pass build-safe placeholders so the image builds without secrets.

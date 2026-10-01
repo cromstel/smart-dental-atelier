@@ -68,7 +68,7 @@ npm run db:seed             # load the copy, FAQs, testimonials, gallery + an ad
 npm run dev                 # http://localhost:3005
 ```
 
-Sign in at `/login` with the `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `.env`.
+Sign in at `/auth/login` with the `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `.env`.
 
 ### With Docker instead
 
@@ -195,7 +195,7 @@ tests/         unit, api, lib, e2e
 | `/comfort-and-self-confidence` | Thematic subpage |
 | `/looking-young-feeling-healthy` | Thematic subpage |
 | `/facial-analysis-and-digital-smile-design` | Technical subpage |
-| `/login` | Credentials sign-in |
+| `/auth/login` | Credentials sign-in (the old `/login` 301s here) |
 
 ### Portals
 
@@ -596,8 +596,8 @@ specification, and why:
 15. **Sign-in ends with a full page load, not `router.push`.** Both destination
     portals are guarded in `getServerSideProps`, and the session cookie only
     reaches the server on a fresh document. A client-side transition could
-    leave the browser sitting on `/login` with a valid session — which is what
-    the E2E suite was intermittently catching. `pages/login.js` also reads the
+    leave the browser sitting on `/auth/login` with a valid session — which is
+    what the E2E suite was intermittently catching. `pages/auth/login.js` reads the
     role from the new session rather than `result.url`, because `result.url` is
     just the callbackUrl that was sent and so cannot express "admin goes to
     /admin".

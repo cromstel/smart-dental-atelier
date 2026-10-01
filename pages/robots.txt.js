@@ -2,7 +2,7 @@ import { PRIVATE_ROUTE_PREFIXES } from '@/lib/seo';
 
 /**
  * GET /robots.txt
- * The portal, admin, login and API surfaces are disallowed — the legacy site had
+ * The portal, admin, auth and API surfaces are disallowed — the legacy site had
  * no robots.txt at all, so its (unprotected-by-design) pages were all crawlable.
  */
 export default function Robots() {

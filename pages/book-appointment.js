@@ -84,7 +84,7 @@ export default function BookAppointmentPage({ services = [] }) {
               <p className="mt-3 text-sm text-silver-400">
                 Sign in to see your previous requests and their status.
               </p>
-              <PrimaryButton href="/login?callbackUrl=/portal" variant="secondary" className="mt-5">
+              <PrimaryButton href="/auth/login?callbackUrl=/portal" variant="secondary" className="mt-5">
                 Client sign in
               </PrimaryButton>
             </div>
