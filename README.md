@@ -19,6 +19,7 @@ is replaced with React + Tailwind, Prisma + MySQL, and NextAuth.
 - [Data model](#data-model)
 - [Authentication](#authentication)
 - [Content: bundled vs database](#content-bundled-vs-database)
+- [Images](#images)
 - [Testing](#testing)
 - [Deploying](#deploying)
 - [Operations](#operations)
@@ -102,6 +103,10 @@ on 3000). The port is set in three places that are kept in sync: the `dev` and
 | `npm run db:reset` | Drop, re-migrate and re-seed |
 | `npm run db:studio` | Prisma Studio |
 | `npm run create-admin` | Create or reset an administrator |
+| `npm run images:optimize` | Transcode every raster in `public/images` to WebP and delete the source |
+
+`npm run images:optimize` also runs automatically as `predev` and `prebuild`, so
+no non-WebP asset can reach the client. See [Images](#images) below.
 
 ---
 
@@ -276,6 +281,13 @@ and `String` where it is open-ended.
 Migrations are committed under `prisma/migrations/`. In CI and production use
 `prisma migrate deploy`; reserve `migrate dev` for local schema work.
 
+Image paths live in rows as well as in source — the gallery is seeded from
+`lib/content.js` and the OG image is a `Setting` — so the WebP conversion ships a
+data migration (`20261001190000_webp_image_paths`) that rewrites the extension in
+`GalleryImage.url`, `Service.image`, `Testimonial.image`, `Page.image`,
+`Setting.value` and `PageBlock.body`. Without it the database keeps pointing at
+source files the image pipeline has deleted.
+
 ---
 
 ## Authentication
@@ -326,10 +338,48 @@ surface with an obvious effect rather than a WYSIWYG editor.
 
 ---
 
+## Images
+
+Every raster the site serves is **WebP**. Two paths keep it that way.
+
+**Bundled assets.** `scripts/optimize-images.mjs` transcodes every `.jpg`,
+`.jpeg`, `.png`, `.bmp` or `.tif` in `public/images` to WebP at quality 82,
+rewrites the references in source, and deletes the source file. It runs as
+`predev` and `prebuild`, so a new JPEG cannot slip through a build. Drop a file
+into `public/images`, run `npm run images:optimize` (or just `npm run dev`), and
+the reference rewrite plus the deletion are handled for you.
+
+The bundled set went from 3.8 MB to 868 KB — a 78 % reduction. `next.config.js`
+asks `next/image` for AVIF only, since re-encoding already-WebP input to WebP
+would burn CPU for no gain.
+
+Two files are exempt and stay as they are, listed in `KEEP_AS_IS` in the script:
+`favicon.ico` needs its extension for legacy browsers, and `apple-touch-icon.png`
+is served to iOS Safari versions that do not all accept WebP in that role.
+
+The script is idempotent and self-healing. A second run converts nothing; if a
+reference still points at a deleted source image but a `.webp` sibling exists,
+the repair pass fixes it rather than shipping a broken `<Image src>`.
+
+**Admin uploads.** `POST /api/admin/gallery` transcodes whatever is uploaded —
+JPEG, PNG, WebP or AVIF — to WebP with the same settings, stores it in
+`public/uploads`, and discards the original. `.rotate()` applies the EXIF
+orientation first, so portrait phone photos are not served sideways, and the
+post-rotation dimensions are stored on the `GalleryImage` row for the portfolio
+layout. The staging directory in `.tmp-uploads` is removed on every request,
+success or failure.
+
+One deployment note: `next start` picks up new files under `public/` on the next
+request, but a long-running server may need a restart before a freshly written
+upload is served. That is Next's static-file cache, not the upload path — the
+record is created and the file is on disk either way.
+
+---
+
 ## Testing
 
 ```bash
-npm test              # 163 tests: unit, API, lib
+npm test              # 170 tests: unit, API, lib
 npm run test:e2e      # Playwright (needs a database and a production build)
 ```
 
@@ -352,6 +402,12 @@ Points worth knowing:
   suites would be order-dependent once they exceed five POSTs per endpoint.
 - `jest.config.js` enables the JSX parser for `.js` files explicitly, because
   this project keeps JSX in `.js`.
+- **The gallery upload tests drive a real request stream.** `tests/api/gallery-upload.test.js`
+  builds a genuine `multipart/form-data` body and hands the route a `Readable`,
+  because the two bugs it guards live in the plumbing between formidable and the
+  filesystem and neither shows up through a mocked request object. It also
+  `chdir`s into a temp directory so the route's `process.cwd()`-derived paths
+  land there instead of in `public/uploads`.
 
 The rate limiter is in-memory per process. On serverless, each warm instance
 keeps its own bucket, so pair it with an edge rule (Vercel WAF, Cloudflare) for
@@ -502,6 +558,16 @@ specification, and why:
 13. **`getStaticProps` + ISR, with a database fallback.** Content that changes
     rarely is revalidated every 5–10 minutes, and a database outage degrades to
     the bundled copy rather than a 500.
+
+14. **Every image is WebP, and two Next/formidable settings make that work.**
+    `next/image` only negotiates AVIF now, since re-encoding WebP to WebP is
+    wasted work. The upload route needed `config.api.bodyParser = false` (Next's
+    built-in parser drains the socket before the handler runs, so `form.parse`
+    never called back and the request hung until the client timed out) and
+    `createDirsFromUploads: true` (formidable 3 defaults it to `false`, so the
+    write stream failed on `ENOENT` and the upload vanished silently). Both
+    predate the WebP work — the upload endpoint had never actually completed —
+    and both are now covered by `tests/api/gallery-upload.test.js`.
 
 ---
 

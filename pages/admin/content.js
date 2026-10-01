@@ -199,7 +199,7 @@ export default function AdminContentPage({ pages = [] }) {
               <FormInput
                 label="Social share image"
                 name="image"
-                placeholder="/images/hero-sexy.jpg"
+                placeholder="/images/hero-sexy.webp"
                 value={values.image}
                 onChange={(event) => setValues((c) => ({ ...c, image: event.target.value }))}
                 error={errors.image}

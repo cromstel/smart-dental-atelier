@@ -15,9 +15,9 @@ const BREADCRUMBS = [
 ];
 
 const PROCESS_GALLERY = [
-  { url: '/images/lab-4.jpg', altText: 'Shade matching session at the atelier', title: 'Shade matching' },
-  { url: '/images/lab-1.jpg', altText: 'Dental Atelier laboratory bench', title: 'The bench' },
-  { url: '/images/smile-sexy-2.jpg', altText: 'Digital smile design preview on a portrait photograph', title: 'Digital preview' },
+  { url: '/images/lab-4.webp', altText: 'Shade matching session at the atelier', title: 'Shade matching' },
+  { url: '/images/lab-1.webp', altText: 'Dental Atelier laboratory bench', title: 'The bench' },
+  { url: '/images/smile-sexy-2.webp', altText: 'Digital smile design preview on a portrait photograph', title: 'Digital preview' },
 ];
 
 export default function FacialAnalysisPage() {

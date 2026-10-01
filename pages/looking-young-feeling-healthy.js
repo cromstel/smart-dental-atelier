@@ -16,9 +16,9 @@ const BREADCRUMBS = [
 ];
 
 const GALLERY = [
-  { url: '/images/smile-young-1.jpg', altText: 'Ceramic crowns restoring worn teeth', title: 'Crowns and bridges' },
-  { url: '/images/smile-young-2.jpg', altText: 'Complete smile makeover result', title: 'Smile makeover' },
-  { url: '/images/smile-young-3.jpg', altText: 'Patient looking younger after ceramic restoration', title: 'Younger looking smile' },
+  { url: '/images/smile-young-1.webp', altText: 'Ceramic crowns restoring worn teeth', title: 'Crowns and bridges' },
+  { url: '/images/smile-young-2.webp', altText: 'Complete smile makeover result', title: 'Smile makeover' },
+  { url: '/images/smile-young-3.webp', altText: 'Patient looking younger after ceramic restoration', title: 'Younger looking smile' },
 ];
 
 export default function LookingYoungFeelingHealthyPage() {
@@ -28,7 +28,7 @@ export default function LookingYoungFeelingHealthyPage() {
         title="Looking young, feeling healthy"
         description="Teeth get more translucent, discoloured and worn with age. Veneers, crowns, bridges and implants reverse most of it — and support the jaw bone."
         pathname="/looking-young-feeling-healthy"
-        image="/images/hero-young.jpg"
+        image="/images/hero-young.webp"
         jsonLd={breadcrumbJsonLd(BREADCRUMBS)}
       />
 
@@ -80,7 +80,7 @@ export default function LookingYoungFeelingHealthyPage() {
           <aside className="lg:sticky lg:top-6">
             <div className="relative aspect-[4/5] overflow-hidden rounded-lg border border-white/10">
               <Image
-                src="/images/hero-young.jpg"
+                src="/images/hero-young.webp"
                 alt="Patient with a restored, younger looking smile"
                 fill
                 sizes="(min-width:1024px) 35vw, 100vw"

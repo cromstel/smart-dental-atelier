@@ -20,7 +20,10 @@
     "db:seed": "tsx prisma/seed.mjs",
     "db:reset": "prisma migrate reset --force && tsx prisma/seed.mjs",
     "db:studio": "prisma studio",
-    "create-admin": "tsx scripts/create-admin.mjs"
+    "create-admin": "tsx scripts/create-admin.mjs",
+    "images:optimize": "tsx scripts/optimize-images.mjs",
+    "predev": "npm run images:optimize",
+    "prebuild": "npm run images:optimize"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"
@@ -34,6 +37,7 @@
     "next-auth": "4.24.15",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "sharp": "0.35.5",
     "tsx": "4.23.15"
   },
   "devDependencies": {

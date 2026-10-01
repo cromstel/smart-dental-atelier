@@ -46,6 +46,10 @@ blob-report/
 public/uploads/*
 !public/uploads/.gitkeep
 
+# formidable stages the raw upload here before it is transcoded; the route
+# removes the directory on every request, so it only exists mid-upload
+.tmp-uploads/
+
 # generated types
 /prisma/generated
 # Prisma 7 generated client (regenerate with 

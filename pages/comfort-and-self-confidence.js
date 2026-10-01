@@ -16,9 +16,9 @@ const BREADCRUMBS = [
 ];
 
 const GALLERY = [
-  { url: '/images/smile-comfort-1.jpg', altText: 'Custom colour shading appointment at the atelier', title: 'Custom shading' },
-  { url: '/images/smile-comfort-2.jpg', altText: 'Ceramic inlays replacing discoloured composite fillings', title: 'Ceramic inlays' },
-  { url: '/images/smile-comfort-3.jpg', altText: 'Fully ceramic bridge in the lower jaw', title: 'Ceramic bridge' },
+  { url: '/images/smile-comfort-1.webp', altText: 'Custom colour shading appointment at the atelier', title: 'Custom shading' },
+  { url: '/images/smile-comfort-2.webp', altText: 'Ceramic inlays replacing discoloured composite fillings', title: 'Ceramic inlays' },
+  { url: '/images/smile-comfort-3.webp', altText: 'Fully ceramic bridge in the lower jaw', title: 'Ceramic bridge' },
 ];
 
 export default function ComfortAndSelfConfidencePage() {
@@ -28,7 +28,7 @@ export default function ComfortAndSelfConfidencePage() {
         title="Comfort & Self-confidence"
         description="Chipping, discoloured fillings, gaps and worn enamel hold people back from smiling. Ceramic inlays, veneers and crowns are the easy solution."
         pathname="/comfort-and-self-confidence"
-        image="/images/hero-comfort.jpg"
+        image="/images/hero-comfort.webp"
         jsonLd={breadcrumbJsonLd(BREADCRUMBS)}
       />
 
@@ -94,7 +94,7 @@ export default function ComfortAndSelfConfidencePage() {
           <aside className="lg:sticky lg:top-6">
             <div className="relative aspect-[4/5] overflow-hidden rounded-lg border border-white/10">
               <Image
-                src="/images/hero-comfort.jpg"
+                src="/images/hero-comfort.webp"
                 alt="Close-up of a relaxed, confident patient smile"
                 fill
                 sizes="(min-width:1024px) 35vw, 100vw"

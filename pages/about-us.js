@@ -25,7 +25,7 @@ export default function AboutPage({ milestones = [], labGallery = [] }) {
         title="About – Dental Atelier"
         description="Dental Atelier is here to empower you to live a healthy, happy life with a peace of mind. Meet Michal Siakel, our director, and read about our latest courses and mission."
         pathname="/about-us"
-        image="/images/lab-3.jpg"
+        image="/images/lab-3.webp"
         jsonLd={breadcrumbJsonLd(BREADCRUMBS)}
       />
 
@@ -67,7 +67,7 @@ export default function AboutPage({ milestones = [], labGallery = [] }) {
             <div className="not-prose my-8 flex flex-col gap-6 sm:flex-row sm:items-start">
               <div className="relative h-56 w-48 shrink-0 overflow-hidden rounded-lg border border-brand-400/30">
                 <Image
-                  src="/images/portrait.jpg"
+                  src="/images/portrait.webp"
                   alt="Portrait of Michal Siakel, director of Dental Atelier"
                   fill
                   sizes="192px"

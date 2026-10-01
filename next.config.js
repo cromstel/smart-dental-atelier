@@ -24,8 +24,10 @@ const nextConfig = {
   output: process.env.NEXT_OUTPUT_STANDALONE === 'true' ? 'standalone' : undefined,
 
   images: {
-    // next/image optimisation for the portfolio / gallery / lab photography.
-    formats: ['image/avif', 'image/webp'],
+    // Sources are already WebP (scripts/optimize-images.mjs runs before every
+    // build), so only AVIF is left for next/image to negotiate. Asking it for
+    // WebP too would re-encode already-WebP input and add CPU for nothing.
+    formats: ['image/avif'],
     deviceSizes: [360, 480, 640, 828, 1080, 1200, 1600, 1920],
     imageSizes: [64, 96, 128, 256, 384],
     // Remote originals are only used by the migration script, never at runtime.
@@ -53,7 +55,9 @@ const nextConfig = {
         ],
       },
       {
-        source: '/images/:path*',
+        // Bundled filenames are content-stable, and an upload is named with a
+        // timestamp plus random bytes, so neither can be replaced in place.
+        source: '/:path(images|uploads)/:path*',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },
       {
