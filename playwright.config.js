@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import { defineConfig, devices } from '@playwright/test';
 import nextConfig from './next.config.js';
 
@@ -14,8 +15,35 @@ import nextConfig from './next.config.js';
  * The suite needs a reachable database for the admin and portal flows; set
  * `DATABASE_URL` in `.env`. The tests create and clean up their own records.
  */
-const PORT = nextConfig.PORT || 3031;
-const BASE_URL = process.env.E2E_BASE_URL || `http://127.0.0.1:${PORT}`;
+const PORT = nextConfig.PORT || 3005;
+
+/**
+ * NextAuth sets its CSRF cookie for `NEXTAUTH_URL`'s host. If the suite browses
+ * a different origin, sign-in fails with a CSRF mismatch and the login tests
+ * bounce back to `/login`. The origin therefore comes from `NEXTAUTH_URL`, with
+ * `.env` read here because Playwright does not load it for us.
+ */
+function nextAuthOrigin() {
+  const fromEnv = readEnvFile('NEXTAUTH_URL');
+  return fromEnv || process.env.NEXTAUTH_URL || null;
+}
+
+/** Minimal `.env` reader — enough for the one key this config needs. */
+function readEnvFile(key) {
+  try {
+    const line = fs
+      .readFileSync('.env', 'utf8')
+      .split(/\r?\n/)
+      .find((entry) => entry.trim().startsWith(`${key}=`));
+    if (!line) return null;
+    return line.slice(line.indexOf('=') + 1).trim().replace(/^["']|["']$/g, '');
+  } catch {
+    return null;
+  }
+}
+
+const origin = nextAuthOrigin();
+const BASE_URL = process.env.E2E_BASE_URL || origin || `http://127.0.0.1:${PORT}`;
 
 export default defineConfig({
   testDir: './tests/e2e',

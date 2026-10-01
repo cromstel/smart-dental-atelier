@@ -257,7 +257,7 @@ export default function AdminMessagesPage({ messages = [], total, page, pageCoun
             <label htmlFor="message-search" className="mb-2 block text-sm font-medium text-brand-200">
               Search
             </label>
-            <form
+            <form method="post"
               onSubmit={(event) => {
                 event.preventDefault();
                 const params = new URLSearchParams();

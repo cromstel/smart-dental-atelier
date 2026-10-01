@@ -69,7 +69,7 @@ export default function PortalProfilePage({ user }) {
     <PortalShell title="My profile" description="Your contact details, as we hold them.">
       <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-start">
         <section className="panel">
-          <form onSubmit={submit} noValidate>
+          <form method="post" onSubmit={submit} noValidate>
             <div aria-live="polite">
               {status === 'success' ? (
                 <Alert tone="success" className="mb-6">

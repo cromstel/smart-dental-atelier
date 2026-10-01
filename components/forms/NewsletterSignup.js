@@ -27,7 +27,7 @@ export default function NewsletterSignup({
   const form = useFormSubmit(endpoint, initialValues, validate);
 
   return (
-    <form onSubmit={form.submit} noValidate className={className}>
+    <form method="post" onSubmit={form.submit} noValidate className={className}>
       <div aria-live="polite">
         {form.isSuccess ? (
           <Alert tone="success" className="mb-4">

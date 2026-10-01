@@ -120,7 +120,7 @@ export default function PortalInquiriesPage({ user, messages = [] }) {
             ) : null}
           </div>
 
-          <form onSubmit={submit} noValidate className="mt-6 space-y-5">
+          <form method="post" onSubmit={submit} noValidate className="mt-6 space-y-5">
             <FormTextArea
               label="Your message"
               name="message"

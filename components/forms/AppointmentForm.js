@@ -89,7 +89,7 @@ export default function AppointmentForm({
   }, [sessionStatus]);
 
   return (
-    <form onSubmit={form.submit} noValidate className={className}>
+    <form method="post" onSubmit={form.submit} noValidate className={className}>
       {title ? <h2 className="mb-2 text-2xl">{title}</h2> : null}
       {description ? <p className="mb-6 text-sm text-silver-400">{description}</p> : null}
 

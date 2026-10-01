@@ -21,7 +21,7 @@ data:
   NEXTAUTH_URL: 'https://www.dentalatelier.co'
   NEXT_PUBLIC_SITE_URL: 'https://www.dentalatelier.co'
   NODE_ENV: 'production'
-  PORT: '3031'
+  PORT: '3005'
   # Extra origins allowed to POST to the public forms, comma separated.
   # Empty means same-origin only.
   ALLOWED_ORIGINS: ''
@@ -64,7 +64,7 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
-              containerPort: 3031
+              containerPort: 3005
           envFrom:
             - configMapRef:
                 name: dental-atelier-config

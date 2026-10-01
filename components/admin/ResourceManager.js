@@ -290,7 +290,7 @@ export default function ResourceManager({ resource, items = [], total = 0, page 
               </Alert>
             ) : null}
 
-            <form onSubmit={save} noValidate className="mt-8">
+            <form method="post" onSubmit={save} noValidate className="mt-8">
               <div className="grid gap-5 sm:grid-cols-2">
                 {fields.map((field) => {
                   const common = {

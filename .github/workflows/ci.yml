@@ -37,11 +37,11 @@ jobs:
 
     env:
       DATABASE_URL: mysql://dental_atelier:dental_atelier@127.0.0.1:3306/dental_atelier
-      NEXTAUTH_URL: http://127.0.0.1:3031
+      NEXTAUTH_URL: http://127.0.0.1:3005
       NEXTAUTH_SECRET: ci-only-secret-not-used-anywhere-real
       ADMIN_EMAIL: ci@dentalatelier.local
       ADMIN_PASSWORD: CiAdminPassword-2026
-      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3031
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3005
 
     steps:
       - uses: actions/checkout@v4
@@ -92,20 +92,20 @@ jobs:
         run: |
           npm start &
           for i in $(seq 1 30); do
-            if curl -sf http://127.0.0.1:3031/api/health > /tmp/health.json; then
+            if curl -sf http://127.0.0.1:3005/api/health > /tmp/health.json; then
               break
             fi
             sleep 2
           done
           cat /tmp/health.json
-          curl -sf http://127.0.0.1:3031/api/health | grep -q '"database":"ok"'
+          curl -sf http://127.0.0.1:3005/api/health | grep -q '"database":"ok"'
           for path in / /about-us /services /faqs /contact-us /portfolio /sitemap.xml /robots.txt; do
-            code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:3031$path")
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:3005$path")
             echo "$path -> $code"
             test "$code" = "200"
           done
           # Admin surfaces must not be crawlable.
-          curl -s -D - -o /dev/null http://127.0.0.1:3031/admin | grep -qi 'x-robots-tag: noindex'
+          curl -s -D - -o /dev/null http://127.0.0.1:3005/admin | grep -qi 'x-robots-tag: noindex'
 
       - name: Upload coverage
         if: always()
@@ -138,11 +138,11 @@ jobs:
 
     env:
       DATABASE_URL: mysql://dental_atelier:dental_atelier@127.0.0.1:3306/dental_atelier
-      NEXTAUTH_URL: http://127.0.0.1:3031
+      NEXTAUTH_URL: http://127.0.0.1:3005
       NEXTAUTH_SECRET: ci-only-secret-not-used-anywhere-real
       ADMIN_EMAIL: ci@dentalatelier.local
       ADMIN_PASSWORD: CiAdminPassword-2026
-      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3031
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3005
 
     steps:
       - uses: actions/checkout@v4
@@ -175,7 +175,7 @@ jobs:
       - name: Build
         run: npm run build
 
-      # webServer in playwright.config.js runs `npm start`, which binds 3031.
+      # webServer in playwright.config.js runs `npm start`, which binds 3005.
       - name: Run the E2E suite
         run: npx playwright test
 

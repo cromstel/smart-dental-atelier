@@ -65,7 +65,7 @@ cp .env.example .env
 npx prisma migrate deploy   # create the schema
 npm run db:seed             # load the copy, FAQs, testimonials, gallery + an admin
 
-npm run dev                 # http://localhost:3031
+npm run dev                 # http://localhost:3005
 ```
 
 Sign in at `/login` with the `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `.env`.
@@ -79,19 +79,19 @@ docker compose exec app npx prisma migrate deploy
 docker compose exec app npm run db:seed
 ```
 
-The Compose stack brings up MySQL 8 and the app on `http://localhost:3031`, and
+The Compose stack brings up MySQL 8 and the app on `http://localhost:3005`, and
 keeps uploads in a named volume.
 
 ### Scripts
 
-The app listens on **port 3031** (chosen to avoid a clash with anything already
+The app listens on **port 3005** (chosen to avoid a clash with anything already
 on 3000). The port is set in three places that are kept in sync: the `dev` and
 `start` scripts, `PORT` in `next.config.js` — which Playwright imports — and
 `EXPOSE`/`ENV PORT` in the Dockerfile.
 
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Development server on :3031 with hot reload |
+| `npm run dev` | Development server on :3005 with hot reload |
 | `npm run build` | `prisma generate` + production build |
 | `npm start` | Serve the production build |
 | `npm run lint` | ESLint 9 flat config (`eslint.config.mjs`) |
@@ -413,6 +413,30 @@ The rate limiter is in-memory per process. On serverless, each warm instance
 keeps its own bucket, so pair it with an edge rule (Vercel WAF, Cloudflare) for
 hard guarantees — noted in the comment on `assertRateLimit`.
 
+### Running the E2E suite locally
+
+```bash
+npm run build
+$env:ADMIN_PASSWORD = '<the value from .env>'   # otherwise 21 tests skip
+npm run test:e2e
+```
+
+70 tests (35 × Chromium and mobile). Three things the suite has to work around,
+each of which mirrors a real product behaviour:
+
+- **`ADMIN_PASSWORD` must be exported.** Playwright does not read `.env`, so
+  without it every portal test skips rather than fails — a green run that
+  tested nothing.
+- **`baseURL` follows `NEXTAUTH_URL`.** NextAuth sets its CSRF cookie for that
+  origin; browsing a different one makes sign-in fail with a CSRF mismatch that
+  looks exactly like a wrong password. `playwright.config.js` reads `NEXTAUTH_URL`
+  (from the environment, then `.env`) so the two cannot drift.
+- **`waitForHydration` before touching a form.** `onSubmit` only cancels the
+  browser's native submit once React has taken over; clicking earlier reloads
+  the page. The appointment test additionally waits past the two-second
+  anti-bot floor, because `isTooFast` deliberately answers 200 without storing
+  anything for a form completed too quickly.
+
 ---
 
 ## Deploying
@@ -568,6 +592,22 @@ specification, and why:
     write stream failed on `ENOENT` and the upload vanished silently). Both
     predate the WebP work — the upload endpoint had never actually completed —
     and both are now covered by `tests/api/gallery-upload.test.js`.
+
+15. **Sign-in ends with a full page load, not `router.push`.** Both destination
+    portals are guarded in `getServerSideProps`, and the session cookie only
+    reaches the server on a fresh document. A client-side transition could
+    leave the browser sitting on `/login` with a valid session — which is what
+    the E2E suite was intermittently catching. `pages/login.js` also reads the
+    role from the new session rather than `result.url`, because `result.url` is
+    just the callbackUrl that was sent and so cannot express "admin goes to
+    /admin".
+
+16. **Every JavaScript-submitted form declares `method="post"`.** A `<form>`
+    with no `method` is a GET form, and a click that lands before hydration
+    falls through to the browser's native submit — appending every field to the
+    query string. On the sign-in form that put the password into the URL, the
+    history and any access log. POST makes the fallback harmless. The admin
+    search box stays on GET, which is what it means.
 
 ---
 

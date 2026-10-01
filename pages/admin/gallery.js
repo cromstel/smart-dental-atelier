@@ -144,7 +144,7 @@ export default function AdminGalleryPage({ images, total, page, pageCount, query
             ) : null}
           </div>
 
-          <form ref={formRef} onSubmit={upload} encType="multipart/form-data" className="mt-6">
+          <form method="post" ref={formRef} onSubmit={upload} encType="multipart/form-data" className="mt-6">
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label

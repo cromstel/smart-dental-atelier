@@ -88,7 +88,7 @@ export default function AdminSettingsPage({ settings = [] }) {
         </PrimaryButton>
       }
     >
-      <form id="settings-form" onSubmit={save}>
+      <form method="post" id="settings-form" onSubmit={save}>
         <div aria-live="polite">
           {message ? (
             <Alert

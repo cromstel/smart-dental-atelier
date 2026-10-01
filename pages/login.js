@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { signIn } from 'next-auth/react';
+import { getSession, signIn } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
 import Seo from '@/components/Seo';
@@ -78,9 +78,21 @@ export default function LoginPage() {
     }
 
     // Admins land in the admin portal, clients in their own.
-    const destination =
-      callbackUrl && callbackUrl !== '/portal' ? callbackUrl : result?.url || '/portal';
-    router.push(destination);
+    //
+    // `result.url` is the callbackUrl we just sent (which defaults to
+    // `/portal`), so it cannot express "admin goes to /admin" — the role has to
+    // come from the freshly created session.
+    const session = await getSession();
+    const isAdmin = session?.user?.role === 'ADMIN';
+    const explicitCallback = callbackUrl && callbackUrl !== '/portal';
+
+    const destination = explicitCallback ? callbackUrl : isAdmin ? '/admin' : '/portal';
+
+    // A full navigation, not `router.push`. Both destination pages are guarded
+    // in `getServerSideProps`, and the session cookie is only visible to the
+    // server on a fresh document load — a client-side transition can leave the
+    // browser sitting on /login while the session is already valid.
+    window.location.assign(destination);
   };
 
   return (
@@ -101,7 +113,7 @@ export default function LoginPage() {
               portal.
             </p>
 
-            <form onSubmit={onSubmit} noValidate className="mt-8 space-y-5">
+            <form method="post" onSubmit={onSubmit} noValidate className="mt-8 space-y-5">
               {displayedError ? (
                 <Alert tone="error" title="Sign-in failed" onDismiss={() => setSubmitError('')}>
                   {displayedError}
