@@ -26,7 +26,7 @@ export default function PortfolioPage({ before = [], after = [], gallery = [] })
         title="Portfolio"
         description="Before and after smile transformations produced by Dental Atelier: a wide array of products of superb quality and prime aesthetic value."
         pathname="/portfolio"
-        image="/images/after.jpg"
+        image="/images/after.webp"
         jsonLd={breadcrumbJsonLd(BREADCRUMBS)}
       />
 

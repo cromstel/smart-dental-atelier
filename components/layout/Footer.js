@@ -13,7 +13,7 @@ export default function Footer({ address, phone, email, copyright }) {
       <div className="container mx-auto grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <Image
-            src="/images/logo-white.png"
+            src="/images/logo-white.webp"
             alt="Dental Atelier"
             width={225}
             height={65}

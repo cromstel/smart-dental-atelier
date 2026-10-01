@@ -63,7 +63,7 @@ export default function AdminShell({ title, description, actions, children, wide
             </button>
 
             <Link href="/admin" className="flex items-center gap-3">
-              <Image src="/images/logo-white.png" alt="" width={225} height={65} className="h-9 w-auto" />
+              <Image src="/images/logo-white.webp" alt="" width={225} height={65} className="h-9 w-auto" />
               <span className="rounded border border-brand-400/40 px-2 py-0.5 text-2xs font-semibold uppercase tracking-caps text-brand-300">
                 Admin
               </span>

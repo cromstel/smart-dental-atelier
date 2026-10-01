@@ -22,7 +22,7 @@ export default function ProductsAndMaterialsPage({ products = [] }) {
         title="Products & Materials"
         description="Facial analysis, diagnostic wax up, provisional crowns, crowns and bridges, implant solutions, inlays/onlays and veneers — all made with certified materials from leading manufacturers."
         pathname="/products-and-materials"
-        image="/images/lab-5.jpg"
+        image="/images/lab-5.webp"
         jsonLd={breadcrumbJsonLd(BREADCRUMBS)}
       />
 

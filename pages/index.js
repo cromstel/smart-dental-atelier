@@ -29,7 +29,7 @@ export default function HomePage({ testimonials = [], gallery = [] }) {
         title="A state-of-the-art laboratory"
         description="Dental Atelier is a state-of-the-art dental laboratory in Brussels. Ceramics, veneers, crowns and bridges designed from facial analysis and digital smile design."
         pathname="/"
-        image="/images/hero-sexy.jpg"
+        image="/images/hero-sexy.webp"
         jsonLd={organisationJsonLd(SITE)}
       >
         <meta property="og:locale" content="en_GB" />
@@ -43,7 +43,7 @@ export default function HomePage({ testimonials = [], gallery = [] }) {
       <section className="relative isolate overflow-hidden">
         <div className="absolute inset-0 -z-10">
           <Image
-            src="/images/hero-sexy.jpg"
+            src="/images/hero-sexy.webp"
             alt=""
             fill
             priority

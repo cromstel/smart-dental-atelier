@@ -16,9 +16,9 @@ const BREADCRUMBS = [
 ];
 
 const GALLERY = [
-  { url: '/images/smile-sexy-1.jpg', altText: 'Patient smile after six ceramic veneers', title: 'Six veneers' },
-  { url: '/images/smile-sexy-2.jpg', altText: 'Digital smile design preview on a portrait photograph', title: 'Digital preview' },
-  { url: '/images/smile-sexy-3.jpg', altText: 'Ceramic implant crown replacing a missing front tooth', title: 'Implant crown' },
+  { url: '/images/smile-sexy-1.webp', altText: 'Patient smile after six ceramic veneers', title: 'Six veneers' },
+  { url: '/images/smile-sexy-2.webp', altText: 'Digital smile design preview on a portrait photograph', title: 'Digital preview' },
+  { url: '/images/smile-sexy-3.webp', altText: 'Ceramic implant crown replacing a missing front tooth', title: 'Implant crown' },
 ];
 
 export default function SexyAndPowerfulSmilePage() {
@@ -28,7 +28,7 @@ export default function SexyAndPowerfulSmilePage() {
         title="Sexy & powerful smile"
         description="How smile aesthetics affect confidence, what a positive smile line is, and how veneers and crowns can improve crooked, gapped or discoloured teeth in weeks instead of years."
         pathname="/sexy-and-powerful-smile"
-        image="/images/hero-sexy.jpg"
+        image="/images/hero-sexy.webp"
         jsonLd={breadcrumbJsonLd(BREADCRUMBS)}
       />
 
@@ -79,7 +79,7 @@ export default function SexyAndPowerfulSmilePage() {
           <aside className="lg:sticky lg:top-6">
             <div className="relative aspect-[4/5] overflow-hidden rounded-lg border border-white/10">
               <Image
-                src="/images/hero-sexy.jpg"
+                src="/images/hero-sexy.webp"
                 alt="Close-up of a patient smile after ceramic treatment"
                 fill
                 sizes="(min-width:1024px) 35vw, 100vw"

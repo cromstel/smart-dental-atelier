@@ -20,7 +20,8 @@ ARG NODE_VERSION=24
 FROM node:${NODE_VERSION}-alpine AS deps
 WORKDIR /app
 
-# libc6-compat is required by the MariaDB client library on Alpine.
+# libc6-compat is required by the MariaDB client library on Alpine, and sharp
+# links against it through its musl prebuilds.
 RUN apk add --no-cache libc6-compat openssl
 
 # Only the manifests first, so `npm ci` is cached until a dependency changes.
@@ -71,8 +72,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Uploads live here at runtime; mount a volume so admin uploads survive a
-# container replacement.
-RUN mkdir -p /app/public/uploads && chown -R nextjs:nodejs /app/public/uploads
+# container replacement. `.tmp-uploads` is where formidable stages an incoming
+# file before it is transcoded — it is created and removed per request, but the
+# app user needs write access to the directory itself.
+RUN mkdir -p /app/public/uploads /app/.tmp-uploads \
+ && chown -R nextjs:nodejs /app/public/uploads /app/.tmp-uploads
 VOLUME ["/app/public/uploads"]
 
 USER nextjs

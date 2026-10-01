@@ -105,7 +105,7 @@ export default function Navbar({ menuItems = NAV_ITEMS, variant = 'light' }) {
         <div className="flex items-center justify-between gap-4 py-4">
           <Link href="/" className="flex items-center gap-3" aria-label={`${SITE.name} home`}>
             <Image
-              src="/images/logo-white.png"
+              src="/images/logo-white.webp"
               alt="Dental Atelier"
               width={225}
               height={65}

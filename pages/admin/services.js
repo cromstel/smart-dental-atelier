@@ -51,7 +51,7 @@ const RESOURCE = {
       rows: 8,
       hint: 'Leave a blank line between paragraphs.',
     },
-    { name: 'image', label: 'Image URL', colSpan: 2, hint: 'Optional. Paths like /images/lab-1.jpg.' },
+    { name: 'image', label: 'Image URL', colSpan: 2, hint: 'Optional. Paths like /images/lab-1.webp.' },
     { name: 'priceFrom', label: 'Price from', hint: 'Optional, e.g. €290.' },
     {
       name: 'published',

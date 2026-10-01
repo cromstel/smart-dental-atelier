@@ -20,7 +20,7 @@ export default function SmileCheckFormPage({ questions = [] }) {
         title="Smile check form"
         description="Answer eleven short questions about your teeth and find out what bothers you about your smile — then request a free consultation."
         pathname="/smile-check-form"
-        image="/images/smile-check-1.jpg"
+        image="/images/smile-check-1.webp"
         jsonLd={breadcrumbJsonLd(BREADCRUMBS)}
       />
 
@@ -31,10 +31,10 @@ export default function SmileCheckFormPage({ questions = [] }) {
       >
         <div className="flex flex-wrap gap-4">
           <div className="relative h-32 w-32 overflow-hidden rounded-lg border border-brand-400/30">
-            <Image src="/images/smile-check-1.jpg" alt="" fill sizes="128px" className="object-cover" />
+            <Image src="/images/smile-check-1.webp" alt="" fill sizes="128px" className="object-cover" />
           </div>
           <div className="relative h-32 w-32 overflow-hidden rounded-lg border border-brand-400/30">
-            <Image src="/images/smile-check-2.jpg" alt="" fill sizes="128px" className="object-cover" />
+            <Image src="/images/smile-check-2.webp" alt="" fill sizes="128px" className="object-cover" />
           </div>
         </div>
       </PageHeader>
