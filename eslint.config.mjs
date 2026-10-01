@@ -1,0 +1,36 @@
+import coreWebVitals from 'eslint-config-next/core-web-vitals';
+
+/**
+ * ESLint flat config (required from ESLint 9 / eslint-config-next 16).
+ *
+ * eslint-config-next v16 ships native flat configs, so these are imported and
+ * spread directly — no `FlatCompat` bridge is needed (and `FlatCompat` in fact
+ * rejects them, because they are already flat).
+ */
+/** @type {import('eslint').Linter.Config[]} */
+const config = [
+  {
+    // Build output, dependencies and generated artefacts are never linted.
+    ignores: [
+      'node_modules/**',
+      '.next/**',
+      'coverage/**',
+      'playwright-report/**',
+      'test-results/**',
+      'public/uploads/**',
+      'next-env.d.ts',
+    ],
+  },
+  ...coreWebVitals,
+  {
+    rules: {
+      // The Next config turns this off because it cannot see JSX usage.
+      'no-unused-vars': 'off',
+      'react/no-unescaped-entities': 'off',
+      // Enforced project-wide: every image goes through next/image.
+      '@next/next/no-img-element': 'error',
+    },
+  },
+];
+
+export default config;

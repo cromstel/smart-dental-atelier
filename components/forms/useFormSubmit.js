@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 /**
  * Shared submission state for every public form.
@@ -19,7 +19,11 @@ export default function useFormSubmit(endpoint, initialValues = {}, validate) {
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState('idle');
   const [message, setMessage] = useState('');
-  const startedAt = useRef(Date.now());
+  // When the form was first shown, used for the anti-bot timing check.
+  // `useState` with a lazy initialiser runs the function exactly once, during
+  // the first render — `useRef(Date.now())` would re-evaluate `Date.now()` on
+  // every render, which is an impure call in the render phase.
+  const [startedAt, setStartedAt] = useState(() => Date.now());
 
   const setValue = useCallback((name, value) => {
     setValues((current) => ({ ...current, [name]: value }));
@@ -39,15 +43,20 @@ export default function useFormSubmit(endpoint, initialValues = {}, validate) {
     [setValue],
   );
 
+  // A stable key for the initial values, so `reset` re-creates only when the
+  // caller actually passes a different set of defaults. Computed during render
+  // (a pure function of props), so it satisfies the hooks lint rules.
+  const initialKey = JSON.stringify(initialValues);
+
   const reset = useCallback(() => {
     setValues(initialValues);
     setErrors({});
     setStatus('idle');
     setMessage('');
-    startedAt.current = Date.now();
+    setStartedAt(Date.now());
     // initialValues is a literal at the call site; resetting to it is intended.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(initialValues)]);
+  }, [initialKey]);
 
   const submit = useCallback(
     async (event) => {
@@ -65,7 +74,7 @@ export default function useFormSubmit(endpoint, initialValues = {}, validate) {
       setErrors({});
 
       // Anti-bot: a form completed faster than a human can type it is rejected.
-      const elapsedMs = Date.now() - startedAt.current;
+      const elapsedMs = Date.now() - startedAt;
       const payload = {
         ...values,
         _t: Math.round(elapsedMs / 1000),
@@ -84,7 +93,9 @@ export default function useFormSubmit(endpoint, initialValues = {}, validate) {
         if (response.ok) {
           setStatus('success');
           setMessage(data.message || 'Thank you - your message has been received.');
-          startedAt.current = Date.now();
+          // Re-stamp so a second submit is timed from the first, not from
+          // when the page was opened.
+          setStartedAt(Date.now());
           return true;
         }
 
@@ -98,7 +109,9 @@ export default function useFormSubmit(endpoint, initialValues = {}, validate) {
         return false;
       }
     },
-    [endpoint, validate, values],
+    // `startedAt` is included so the elapsed-time measurement always reflects
+    // the value currently in state (it is re-stamped after a successful send).
+    [endpoint, validate, values, startedAt],
   );
 
   return {

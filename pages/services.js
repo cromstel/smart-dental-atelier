@@ -92,7 +92,6 @@ export default function ServicesPage({ services = [] }) {
                 <h3 className="text-xl text-brand-200">{service.title}</h3>
                 <div className="mt-3 space-y-3 text-sm leading-relaxed text-silver-400">
                   {toParagraphs(service.description).map((paragraph, index) => (
-                    // eslint-disable-next-line react/no-array-index-key
                     <p key={index}>{paragraph}</p>
                   ))}
                 </div>
