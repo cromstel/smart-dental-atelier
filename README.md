@@ -436,6 +436,31 @@ each of which mirrors a real product behaviour:
   the page. The appointment test additionally waits past the two-second
   anti-bot floor, because `isTooFast` deliberately answers 200 without storing
   anything for a form completed too quickly.
+- **Timeouts are generous and the worker count is pinned.** Several assertions
+  wait on a server round-trip rather than a DOM change — signing in verifies a
+  bcrypt hash, which is deliberately CPU-expensive. With the worker count left to
+  "half the cores" the suite's runtime swung by an order of magnitude and a busy
+  machine produced timeouts that had nothing to do with the code under test.
+  Waiting longer cannot mask a wrong result, only slow-but-correct.
+
+### Pinned transitive dependencies
+
+Prisma pins its drivers to **exact** versions, so npm will never bump them on
+its own. `package.json` therefore carries `overrides`:
+
+| Package | Why |
+| --- | --- |
+| `mariadb` → `3.4.7` | Runtime, via `@prisma/adapter-mariadb`. Fixes CVE-2026-55215 (password handed to the peer before the server certificate is validated, even with `ssl: true`), CVE-2026-55854 (PAM can send the password in cleartext over plain TCP) and CVE-2026-55855 (Buffer escaping under `big5`/`gbk`/`sjis`/`cp932`/`gb18030`). |
+| `mysql2` → `3.24.5` | Dev-only, via the Prisma CLI. Fixes the auth-plugin downgrade to `mysql_clear_password`. |
+
+Note the advisories name `mariadb` **3.4.6**, which was never published to npm —
+3.4.7 is the `maintenance-3.4` release and carries the same fix. Re-check these
+overrides when Prisma next moves: if it starts depending on a newer driver the
+override should follow it, not pin it back.
+
+CVE-2026-55855 needs a multi-byte client charset to be reachable; this app uses
+the default `utf8mb4` and Prisma binds through prepared statements, so that
+vector was not exploitable here even before the bump.
 
 ---
 
