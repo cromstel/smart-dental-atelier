@@ -1,4 +1,4 @@
-﻿import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 /**
  * Authentication and the two portals.
@@ -26,11 +26,16 @@ async function waitForHydration(page) {
 /**
  * Signs in through the real form.
  *
- * Signing in is not a fast DOM change: it verifies a bcrypt hash and writes
- * `lastLoginAt` twice (once in `authorize`, once in the `signIn` event) before
- * the full-page navigation lands. On a loaded machine that regularly exceeds the
- * suite's 10 s default, so the navigation gets its own, longer budget.
+ * Signing in is not a fast DOM change: the server verifies a bcrypt hash and
+ * writes `lastLoginAt` twice (once in `authorize`, once in the `signIn` event)
+ * before the full-page navigation lands. bcrypt is deliberately CPU-expensive,
+ * so on a slow or loaded machine — and with two workers signing in at once —
+ * that comfortably exceeds both Playwright's 10 s default and the 30 s that
+ * proved marginal. The budget is generous on purpose: it is a whole page load,
+ * not an element appearing, so waiting longer cannot hide a wrong destination.
  */
+const SIGN_IN_TIMEOUT = 60_000;
+
 async function signIn(page) {
   await page.goto('/auth/login');
   await waitForHydration(page);
@@ -41,8 +46,6 @@ async function signIn(page) {
 
   await expect(page).toHaveURL(/\/admin|\/portal/, { timeout: SIGN_IN_TIMEOUT });
 }
-
-const SIGN_IN_TIMEOUT = 30_000;
 
 test.describe('authentication', () => {
   test.skip(!ADMIN_PASSWORD, 'ADMIN_PASSWORD is not set in the environment');
@@ -67,7 +70,7 @@ test.describe('authentication', () => {
   test('signs in with credentials and lands on the admin dashboard', async ({ page }) => {
     await signIn(page);
 
-    await expect(page).toHaveURL(/\/admin/, { timeout: 30_000 });
+    await expect(page).toHaveURL(/\/admin/, { timeout: SIGN_IN_TIMEOUT });
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
     await expect(page.getByText('Needs your attention')).toBeVisible();
   });

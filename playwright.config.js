@@ -47,11 +47,22 @@ const BASE_URL = process.env.E2E_BASE_URL || origin || `http://127.0.0.1:${PORT}
 
 export default defineConfig({
   testDir: './tests/e2e',
-  timeout: 60_000,
-  expect: { timeout: 10_000 },
+  timeout: 90_000,
+  // Generous on purpose. Several assertions wait on a server round-trip rather
+  // than a DOM change — signing in verifies a bcrypt hash, which is deliberately
+  // CPU-expensive, and the suite runs two browsers plus the Next server against
+  // one database. On a slow or loaded machine the old 10 s default produced
+  // timeouts that had nothing to do with the code under test. Waiting longer
+  // cannot mask a wrong result; it only stops slow-but-correct being read as
+  // broken.
+  expect: { timeout: 30_000 },
   // Fail fast rather than retrying: a flake here is usually a real problem.
   retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // Pinned rather than left to "half the cores". Every portal test signs in,
+  // and each sign-in is a bcrypt verification against one database; letting the
+  // worker count float with the host made the suite's runtime swing by an order
+  // of magnitude and turned a loaded machine into spurious timeouts.
+  workers: process.env.CI ? 1 : 2,
   forbidOnly: Boolean(process.env.CI),
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : [['list']],
 

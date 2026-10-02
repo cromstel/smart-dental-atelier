@@ -28,6 +28,10 @@
   "prisma": {
     "seed": "node prisma/seed.mjs"
   },
+  "overrides": {
+    "mariadb": "3.4.7",
+    "mysql2": "3.24.5"
+  },
   "dependencies": {
     "@prisma/adapter-mariadb": "7.10.0",
     "@prisma/client": "7.10.0",
