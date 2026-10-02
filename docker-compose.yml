@@ -15,7 +15,7 @@ services:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
     environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-dental_atelier}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-smart_dental_atelier}
       MYSQL_USER: ${MYSQL_USER:-dental_atelier}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-dental_atelier}
       # Deterministic collation so the Prisma schema and the database agree.
@@ -43,7 +43,7 @@ services:
         condition: service_healthy
     environment:
       # Host `db`, port 3306 — the *internal* port, not the mapped 3307.
-      DATABASE_URL: mysql://${MYSQL_USER:-dental_atelier}:${MYSQL_PASSWORD:-dental_atelier}@db:3306/${MYSQL_DATABASE:-dental_atelier}
+      DATABASE_URL: mysql://${MYSQL_USER:-dental_atelier}:${MYSQL_PASSWORD:-dental_atelier}@db:3306/${MYSQL_DATABASE:-smart_dental_atelier}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3005}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?set NEXTAUTH_SECRET in .env}
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3005}

@@ -134,6 +134,7 @@ test.describe('admin portal', () => {
 
   test('creates, edits and deletes a FAQ', async ({ page }) => {
     await page.goto('/admin/faqs');
+    await waitForHydration(page);
 
     const question = `Is this a Playwright question? ${Date.now()}`;
 
@@ -166,6 +167,7 @@ test.describe('admin portal', () => {
 
   test('creates a testimonial and can unpublish it', async ({ page }) => {
     await page.goto('/admin/testimonials');
+    await waitForHydration(page);
 
     const author = `E2E ${Date.now()}`;
 
@@ -220,6 +222,7 @@ test.describe('admin portal', () => {
     await expect(page.getByText(/Appointment requested/)).toBeVisible();
 
     await page.goto(`/admin/appointments?q=${encodeURIComponent(email)}`);
+    await waitForHydration(page);
 
     const row = page.getByRole('row').filter({ hasText: marker });
     await expect(row).toBeVisible();
@@ -243,6 +246,10 @@ test.describe('admin portal', () => {
 
   test('edits a site setting', async ({ page }) => {
     await page.goto('/admin/settings');
+    // Without this, `fill` lands before hydration: React never sees the change,
+    // the page's dirty list stays empty, and the save button is correctly left
+    // disabled.
+    await waitForHydration(page);
 
     const hours = page.getByLabel('booking.openingHours');
     await expect(hours).toBeVisible();
@@ -251,12 +258,18 @@ test.describe('admin portal', () => {
     const updated = 'Monday to Friday, 09:00 - 16:30';
 
     await hours.fill(updated);
-    await page.getByRole('button', { name: /^Save/ }).first().click();
+
+    // The button is disabled until a change is registered, so targeting the
+    // enabled one also proves the fill reached React.
+    const save = page.getByRole('button', { name: /^Save \d+ change/ });
+    await expect(save).toBeEnabled();
+    await save.click();
     await expect(page.getByText('Settings saved.')).toBeVisible();
 
     // Restore, so the suite does not leave the site with test data.
     await hours.fill(original);
-    await page.getByRole('button', { name: /^Save/ }).first().click();
+    await expect(save).toBeEnabled();
+    await save.click();
     await expect(page.getByText('Settings saved.')).toBeVisible();
   });
 

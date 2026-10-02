@@ -23,7 +23,7 @@ jobs:
       mysql:
         image: mysql:8.4
         env:
-          MYSQL_DATABASE: dental_atelier
+          MYSQL_DATABASE: smart_dental_atelier
           MYSQL_USER: dental_atelier
           MYSQL_PASSWORD: dental_atelier
           MYSQL_ROOT_PASSWORD: root_change_me
@@ -36,7 +36,7 @@ jobs:
           --health-retries=12
 
     env:
-      DATABASE_URL: mysql://dental_atelier:dental_atelier@127.0.0.1:3306/dental_atelier
+      DATABASE_URL: mysql://dental_atelier:dental_atelier@127.0.0.1:3306/smart_dental_atelier
       NEXTAUTH_URL: http://127.0.0.1:3005
       NEXTAUTH_SECRET: ci-only-secret-not-used-anywhere-real
       ADMIN_EMAIL: ci@dentalatelier.local
@@ -124,7 +124,7 @@ jobs:
       mysql:
         image: mysql:8.4
         env:
-          MYSQL_DATABASE: dental_atelier
+          MYSQL_DATABASE: smart_dental_atelier
           MYSQL_USER: dental_atelier
           MYSQL_PASSWORD: dental_atelier
           MYSQL_ROOT_PASSWORD: root_change_me
@@ -137,7 +137,7 @@ jobs:
           --health-retries=12
 
     env:
-      DATABASE_URL: mysql://dental_atelier:dental_atelier@127.0.0.1:3306/dental_atelier
+      DATABASE_URL: mysql://dental_atelier:dental_atelier@127.0.0.1:3306/smart_dental_atelier
       NEXTAUTH_URL: http://127.0.0.1:3005
       NEXTAUTH_SECRET: ci-only-secret-not-used-anywhere-real
       ADMIN_EMAIL: ci@dentalatelier.local
