@@ -18,9 +18,9 @@
 // committed to `.gitignore` and imported as `@/generated/prisma/client` in
 // `lib/prisma.js`.
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
-  runtime  = "nodejs"
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  runtime      = "nodejs"
   moduleFormat = "esm"
 }
 
