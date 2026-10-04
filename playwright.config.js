@@ -22,10 +22,13 @@ const PORT = nextConfig.PORT || 3005;
  * a different origin, sign-in fails with a CSRF mismatch and the login tests
  * bounce back to `/auth/login`. The origin comes from `NEXTAUTH_URL`, with
  * `.env` read here because Playwright does not load it for us.
+ *
+ * The environment wins over the file, matching how dotenv and Next themselves
+ * resolve it — an exported `NEXTAUTH_URL` has to be able to override the file,
+ * which is what CI relies on.
  */
 function nextAuthOrigin() {
-  const fromEnv = readEnvFile('NEXTAUTH_URL');
-  return fromEnv || process.env.NEXTAUTH_URL || null;
+  return process.env.NEXTAUTH_URL || readEnvFile('NEXTAUTH_URL') || null;
 }
 
 /** Minimal `.env` reader — enough for the one key this config needs. */
