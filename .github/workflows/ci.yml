@@ -24,8 +24,8 @@ jobs:
         image: mysql:8.4
         env:
           MYSQL_DATABASE: smart_dental_atelier
-          MYSQL_USER: dental_atelier
-          MYSQL_PASSWORD: dental_atelier
+          MYSQL_USER: smart_dental_atelier
+          MYSQL_PASSWORD: smart_dental_atelier
           MYSQL_ROOT_PASSWORD: root_change_me
         ports:
           - 3306:3306
@@ -36,7 +36,7 @@ jobs:
           --health-retries=12
 
     env:
-      DATABASE_URL: mysql://dental_atelier:dental_atelier@127.0.0.1:3306/smart_dental_atelier
+      DATABASE_URL: mysql://smart_dental_atelier:smart_dental_atelier@127.0.0.1:3306/smart_dental_atelier
       NEXTAUTH_URL: http://127.0.0.1:3005
       NEXTAUTH_SECRET: ci-only-secret-not-used-anywhere-real
       ADMIN_EMAIL: ci@dentalatelier.local
@@ -60,7 +60,7 @@ jobs:
       - name: Allow the service user to create databases
         run: |
           mysql -h 127.0.0.1 -P 3306 -uroot -proot_change_me <<'SQL'
-            GRANT ALL PRIVILEGES ON *.* TO 'dental_atelier'@'%';
+            GRANT ALL PRIVILEGES ON *.* TO 'smart_dental_atelier'@'%';
             FLUSH PRIVILEGES;
           SQL
 
@@ -125,8 +125,8 @@ jobs:
         image: mysql:8.4
         env:
           MYSQL_DATABASE: smart_dental_atelier
-          MYSQL_USER: dental_atelier
-          MYSQL_PASSWORD: dental_atelier
+          MYSQL_USER: smart_dental_atelier
+          MYSQL_PASSWORD: smart_dental_atelier
           MYSQL_ROOT_PASSWORD: root_change_me
         ports:
           - 3306:3306
@@ -137,7 +137,7 @@ jobs:
           --health-retries=12
 
     env:
-      DATABASE_URL: mysql://dental_atelier:dental_atelier@127.0.0.1:3306/smart_dental_atelier
+      DATABASE_URL: mysql://smart_dental_atelier:smart_dental_atelier@127.0.0.1:3306/smart_dental_atelier
       NEXTAUTH_URL: http://127.0.0.1:3005
       NEXTAUTH_SECRET: ci-only-secret-not-used-anywhere-real
       ADMIN_EMAIL: ci@dentalatelier.local
@@ -159,7 +159,7 @@ jobs:
       - name: Allow the service user to create databases
         run: |
           mysql -h 127.0.0.1 -P 3306 -uroot -proot_change_me <<'SQL'
-            GRANT ALL PRIVILEGES ON *.* TO 'dental_atelier'@'%';
+            GRANT ALL PRIVILEGES ON *.* TO 'smart_dental_atelier'@'%';
             FLUSH PRIVILEGES;
           SQL
 

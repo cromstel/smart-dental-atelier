@@ -61,6 +61,7 @@ npm install
 
 cp .env.example .env
 # then edit .env — at minimum DATABASE_URL, NEXTAUTH_SECRET and ADMIN_PASSWORD
+# the database and its user are both named `smart_dental_atelier`
 
 npx prisma migrate deploy   # create the schema
 npm run db:seed             # load the copy, FAQs, testimonials, gallery + an admin
@@ -280,6 +281,13 @@ and `String` where it is open-ended.
 
 Migrations are committed under `prisma/migrations/`. In CI and production use
 `prisma migrate deploy`; reserve `migrate dev` for local schema work.
+
+The schema and its MySQL user are both named **`smart_dental_atelier`**. Watch
+out for one footgun: the Prisma CLI reads `.env` through `dotenv`, but Next
+loads `.env.local` at *higher* priority. If the two disagree, `prisma migrate`
+targets one database while the application reads another — and the build still
+exits 0, silently logging "table does not exist" for every table the marketing
+pages read before falling back to bundled content. Keep them identical.
 
 Image paths live in rows as well as in source — the gallery is seeded from
 `lib/content.js` and the OG image is a `Setting` — so the WebP conversion ships a
