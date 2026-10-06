@@ -497,6 +497,16 @@ break the ESLint 9 flat config this project uses. Left alone deliberately —
 revisit when `braces` ships a fix, and take the upgrade then rather than the
 downgrade now.
 
+One medium advisory sits alongside them and is the same story: `sprintf-js`
+(denial of service through unbounded precision specifiers), pulled in by
+`jest → @istanbuljs/load-nyc-config → js-yaml → argparse`. Dev-only; its
+vulnerable range is `<= 1.1.3`, 1.1.3 is the latest release, and no patched
+version exists — GitHub reports it with an empty `first_patched_version`.
+
+So the position is: every advisory that *can* be fixed has been
+(`mariadb`, `mysql2` and `deepmerge-ts` are all overridden), and the six that
+remain have no upstream patch rather than having been overlooked.
+
 ---
 
 ## Deploying
