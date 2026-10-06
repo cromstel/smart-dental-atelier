@@ -24,7 +24,11 @@ async function waitForHydration(page) {
 }
 
 /**
- * Signs in through the real form.
+ * Signs in through the real form on the staff sign-in page.
+ *
+ * Staff authenticate under `/auth/admin/*`; the client page at `/auth/login`
+ * is covered separately, because a staff session started there has to be
+ * handed over to the admin page rather than completing there.
  *
  * Signing in is not a fast DOM change: the server verifies a bcrypt hash and
  * writes `lastLoginAt` twice (once in `authorize`, once in the `signIn` event)
@@ -36,23 +40,38 @@ async function waitForHydration(page) {
  */
 const SIGN_IN_TIMEOUT = 60_000;
 
+/**
+ * Waits until the browser is actually on a portal, not merely on a URL that
+ * contains the word.
+ *
+ * `toHaveURL(/\/admin/)` also matches `/auth/admin/login`, so a sign-in that
+ * bounced straight back to the form satisfied it and the resulting failure
+ * surfaced later, in a test that had nothing to do with signing in. The
+ * pathname is compared instead: `/auth/admin/login` can never pass.
+ */
+async function expectPortalPath(page, { timeout = SIGN_IN_TIMEOUT } = {}) {
+  await expect
+    .poll(() => new URL(page.url()).pathname, { timeout, message: 'never reached a portal after signing in' })
+    .toMatch(/^\/(admin|portal)(\/|$)/);
+}
+
 async function signIn(page) {
-  await page.goto('/auth/login');
+  await page.goto('/auth/admin/login');
   await waitForHydration(page);
 
   await page.getByLabel('E-mail').fill(ADMIN_EMAIL);
   await page.getByLabel('Password').fill(ADMIN_PASSWORD);
   await page.getByRole('button', { name: 'Sign in' }).click();
 
-  await expect(page).toHaveURL(/\/admin|\/portal/, { timeout: SIGN_IN_TIMEOUT });
+  await expectPortalPath(page);
 }
 
 test.describe('authentication', () => {
   test.skip(!ADMIN_PASSWORD, 'ADMIN_PASSWORD is not set in the environment');
 
-  test('redirects an anonymous visitor from the admin portal to sign in', async ({ page }) => {
+  test('redirects an anonymous visitor from the admin portal to the admin sign in', async ({ page }) => {
     await page.goto('/admin');
-    await expect(page).toHaveURL(/\/auth\/login\?callbackUrl=/);
+    await expect(page).toHaveURL(/\/auth\/admin\/login\?callbackUrl=/);
   });
 
   test('redirects an anonymous visitor from the client portal to sign in', async ({ page }) => {
@@ -70,13 +89,43 @@ test.describe('authentication', () => {
   test('signs in with credentials and lands on the admin dashboard', async ({ page }) => {
     await signIn(page);
 
-    await expect(page).toHaveURL(/\/admin/, { timeout: SIGN_IN_TIMEOUT });
+    await expectPortalPath(page);
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
     await expect(page.getByText('Needs your attention')).toBeVisible();
   });
 
-  test('reports invalid credentials without revealing whether the account exists', async ({ page }) => {
+  test('hands a staff session started on the client page over to the admin page', async ({ page }) => {
+    // The form is shared, so an administrator can still type their password at
+    // `/auth/login` — but the sign-in itself must finish under `/auth/admin/*`.
     await page.goto('/auth/login');
+    await waitForHydration(page);
+
+    // Observed as a request rather than a URL: the admin page answers that
+    // navigation with a 307 to `/admin`, so the intermediate URL is gone by
+    // the time `toHaveURL` could poll for it.
+    const adminEntry = page.waitForRequest((request) => request.url().includes('/auth/admin/login'));
+
+    await page.getByLabel('E-mail').fill(ADMIN_EMAIL);
+    await page.getByLabel('Password').fill(ADMIN_PASSWORD);
+    await page.getByRole('button', { name: 'Sign in' }).click();
+
+    await adminEntry;
+    // The admin page sees the live session and forwards it instead of asking
+    // for the password a second time.
+    await expectPortalPath(page);
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+  });
+
+  test('forwards an already signed-in administrator to where they were going', async ({ page }) => {
+    await signIn(page);
+    await expectPortalPath(page);
+
+    await page.goto('/auth/admin/login?callbackUrl=/admin/settings');
+    await expect(page).toHaveURL(/\/admin\/settings/);
+  });
+
+  test('reports invalid credentials without revealing whether the account exists', async ({ page }) => {
+    await page.goto('/auth/admin/login');
     await waitForHydration(page);
 
     await page.getByLabel('E-mail').fill(ADMIN_EMAIL);
@@ -84,7 +133,7 @@ test.describe('authentication', () => {
     await page.getByRole('button', { name: 'Sign in' }).click();
 
     await expect(page.getByText(/e-mail and password combination is not correct/i)).toBeVisible();
-    await expect(page).toHaveURL(/\/auth\/login/);
+    await expect(page).toHaveURL(/\/auth\/admin\/login/);
   });
 
   test('validates the login form in the browser before calling the API', async ({ page }) => {
@@ -108,7 +157,7 @@ test.describe('admin portal', () => {
 
   test.beforeEach(async ({ page }) => {
     await signIn(page);
-    await expect(page).toHaveURL(/\/admin/, { timeout: SIGN_IN_TIMEOUT });
+    await expectPortalPath(page);
   });
 
   const ADMIN_SECTIONS = [
@@ -278,9 +327,9 @@ test.describe('admin portal', () => {
     await waitForHydration(page);
     await page.getByRole('button', { name: 'Sign out' }).click();
 
-    await expect(page).toHaveURL(/\/auth\/login/);
+    await expect(page).toHaveURL(/\/auth\/admin\/login/);
     await page.goto('/admin');
-    await expect(page).toHaveURL(/\/auth\/login\?callbackUrl=/);
+    await expect(page).toHaveURL(/\/auth\/admin\/login\?callbackUrl=/);
   });
 });
 
@@ -289,7 +338,7 @@ test.describe('client portal', () => {
 
   test('an administrator sees the client portal link', async ({ page }) => {
     await signIn(page);
-    await expect(page).toHaveURL(/\/admin/, { timeout: SIGN_IN_TIMEOUT });
+    await expectPortalPath(page);
 
     await page.goto('/portal');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
