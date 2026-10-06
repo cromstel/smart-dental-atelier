@@ -387,7 +387,7 @@ record is created and the file is on disk either way.
 ## Testing
 
 ```bash
-npm test              # 170 tests: unit, API, lib
+npm test              # 172 tests: unit, API, lib
 npm run test:e2e      # Playwright (needs a database and a production build)
 ```
 
@@ -429,7 +429,7 @@ $env:ADMIN_PASSWORD = '<the value from .env>'   # otherwise 21 tests skip
 npm run test:e2e
 ```
 
-70 tests (35 × Chromium and mobile). Three things the suite has to work around,
+72 tests (36 × Chromium and mobile). Three things the suite has to work around,
 each of which mirrors a real product behaviour:
 
 - **`ADMIN_PASSWORD` must be exported.** Playwright does not read `.env`, so
@@ -460,6 +460,7 @@ its own. `package.json` therefore carries `overrides`:
 | --- | --- |
 | `mariadb` → `3.4.7` | Runtime, via `@prisma/adapter-mariadb`. Fixes CVE-2026-55215 (password handed to the peer before the server certificate is validated, even with `ssl: true`), CVE-2026-55854 (PAM can send the password in cleartext over plain TCP) and CVE-2026-55855 (Buffer escaping under `big5`/`gbk`/`sjis`/`cp932`/`gb18030`). |
 | `mysql2` → `3.24.5` | Dev-only, via the Prisma CLI. Fixes the auth-plugin downgrade to `mysql_clear_password`. |
+| `deepmerge-ts` → `8.0.2` | Dev-only, via `@prisma/config` inside the Prisma CLI. Fixes stack exhaustion on recursive object graphs (GHSA-ggr8-5vv4-36mx). Verified `prisma validate` / `generate` / `migrate status` / `migrate deploy` / `db:seed` all still behave identically, since config merging is what this package does. |
 
 Note the advisories name `mariadb` **3.4.6**, which was never published to npm —
 3.4.7 is the `maintenance-3.4` release and carries the same fix. Re-check these
@@ -469,6 +470,25 @@ override should follow it, not pin it back.
 CVE-2026-55855 needs a multi-byte client charset to be reachable; this app uses
 the default `utf8mb4` and Prisma binds through prepared statements, so that
 vector was not exploitable here even before the bump.
+
+### Known remaining advisories
+
+`npm audit` still reports five high advisories, all one chain:
+
+```
+eslint-config-next → @next/eslint-plugin-next → fast-glob → micromatch → braces
+```
+
+They are **dev-only** (`eslint-config-next` has exactly one parent, the lint
+toolchain) and the underlying flaw is stack exhaustion from deeply nested glob
+patterns. Nothing in this project feeds user-supplied patterns to ESLint.
+
+They are also **not fixable today**: the advisory's vulnerable range for `braces`
+is `*`, and 3.0.3 is the latest release, so no patched version exists. npm's
+automated remedy is to downgrade `eslint-config-next` to 14.2.35, which would
+break the ESLint 9 flat config this project uses. Left alone deliberately —
+revisit when `braces` ships a fix, and take the upgrade then rather than the
+downgrade now.
 
 ---
 
