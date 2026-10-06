@@ -69,7 +69,8 @@ npm run db:seed             # load the copy, FAQs, testimonials, gallery + an ad
 npm run dev                 # http://localhost:3005
 ```
 
-Sign in at `/auth/login` with the `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `.env`.
+Sign in at `/auth/admin/login` with the `ADMIN_EMAIL` / `ADMIN_PASSWORD` from
+`.env`; clients sign in at `/auth/login`.
 
 ### With Docker instead
 
@@ -119,6 +120,8 @@ Browser
   ▼
 Next.js (Pages Router)
   ├── /pages            public pages  ── getStaticProps + ISR
+  ├── /pages/auth/*     sign-in pages ── `/auth/login` (clients),
+  │                      `/auth/admin/login` (staff), getServerSideProps
   ├── /pages/admin/*    admin portal  ── getServerSideProps, role-gated
   ├── /pages/portal/*   client portal ── getServerSideProps, session-gated
   └── /pages/api        route handlers
@@ -146,12 +149,15 @@ components/
   forms/       ContactForm, RequestInfoForm, SmileCheckForm, AppointmentForm,
                NewsletterSignup, useFormSubmit (shared submit/validation hook)
   ui/          PrimaryButton, FormInput/TextArea/Select, Alert, Badge, Section
+  auth/        CredentialsSignIn (the sign-in form, in a client and an admin
+               variant — both portals share it)
   admin/       AdminShell, ResourceManager (schema-driven CRUD), DataTable,
                StatCard, StatusBadge, ConfirmButton, Pagination
   portal/      PortalShell
 
 lib/           prisma (driver-adapter client), auth (+ withWriteRetry),
-               authOptions, api (handler wrapper), guards, validation (Zod),
+               authOptions, authRoutes (the `/auth/*` vs `/auth/admin/*` split),
+               api (handler wrapper), guards, validation (Zod),
                cms (content access), seo, format, serialize, mailer, audit,
                content (bundled copy)
 prisma/        schema.prisma, migrations, seed.mjs
@@ -196,7 +202,8 @@ tests/         unit, api, lib, e2e
 | `/comfort-and-self-confidence` | Thematic subpage |
 | `/looking-young-feeling-healthy` | Thematic subpage |
 | `/facial-analysis-and-digital-smile-design` | Technical subpage |
-| `/auth/login` | Credentials sign-in (the old `/login` 301s here) |
+| `/auth/login` | Client credentials sign-in (the old `/login` 301s here) |
+| `/auth/admin/login` | Staff credentials sign-in; `/admin/*` and admin sign-out land here |
 
 ### Portals
 
@@ -429,7 +436,7 @@ $env:ADMIN_PASSWORD = '<the value from .env>'   # otherwise 21 tests skip
 npm run test:e2e
 ```
 
-72 tests (36 × Chromium and mobile). Three things the suite has to work around,
+76 tests (38 × Chromium and mobile). Three things the suite has to work around,
 each of which mirrors a real product behaviour:
 
 - **`ADMIN_PASSWORD` must be exported.** Playwright does not read `.env`, so
@@ -649,13 +656,29 @@ specification, and why:
 15. **Sign-in ends with a full page load, not `router.push`.** Both destination
     portals are guarded in `getServerSideProps`, and the session cookie only
     reaches the server on a fresh document. A client-side transition could
-    leave the browser sitting on `/auth/login` with a valid session — which is
-    what the E2E suite was intermittently catching. `pages/auth/login.js` reads the
-    role from the new session rather than `result.url`, because `result.url` is
-    just the callbackUrl that was sent and so cannot express "admin goes to
-    /admin".
+    leave the browser sitting on a sign-in page with a valid session — which is
+    what the E2E suite was intermittently catching. `components/auth/CredentialsSignIn.js`
+    reads the role from the new session rather than `result.url`, because
+    `result.url` is just the callbackUrl that was sent and so cannot express
+    "admin goes to /admin".
 
-16. **Every JavaScript-submitted form declares `method="post"`.** A `<form>`
+16. **Admin authentication never happens on `/auth/login`.** The two portals
+    share one NextAuth provider, so the *page* is what enforces the split: a
+    staff session started on the client page is handed to
+    `/auth/admin/login`, which forwards it to `/admin`, and the admin variant of
+    the form refuses a non-staff account. `lib/guards.js` sends anonymous
+    visitors from `/admin/*` to `/auth/admin/login` and from `/portal/*` to
+    `/auth/login`, and `lib/authRoutes.js` is the single source of truth for
+    both paths.
+
+    The `callbackUrl` that travels with every hop is sanitised by
+    `safeCallbackUrl()` in the same module. It reaches `window.location.assign()`
+    and a `Location` header, so an absolute URL, a `//host` pair, or an `/auth/`
+    or `/api/` target would all be an open redirect — or would bounce a freshly
+    signed-in administrator straight back into a sign-in page. Only a relative,
+    non-authentication path is ever forwarded.
+
+17. **Every JavaScript-submitted form declares `method="post"`.** A `<form>`
     with no `method` is a GET form, and a click that lands before hydration
     falls through to the browser's native submit — appending every field to the
     query string. On the sign-in form that put the password into the URL, the
