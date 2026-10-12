@@ -553,6 +553,8 @@ the ingress host and creating the secret named in `k8s/secret.example.yaml`.
 - [ ] `prisma migrate deploy` run
 - [ ] `HTTPS` enforced and `NEXTAUTH_URL` uses `https://`
 - [ ] `ALLOWED_ORIGINS` set if forms are posted from another origin
+- [ ] Edge rate limiting configured (Vercel Firewall / proxy / Cloudflare —
+      see Operations) if running more than one instance
 - [ ] `SMTP_*` configured, otherwise notifications are only logged
 - [ ] Google Search Console: submit `sitemap.xml`, keep the `msvalidate.01` and
       `google-site-verification` meta tags (still present via `_document`/`Seo`)
@@ -574,6 +576,24 @@ logging problem cannot break a write.
 
 **Rate limits** — contact 5 / 10 min, smile-check 5 / 10 min, request-info
 6 / 10 min, appointments 4 / 10 min, newsletter 5 / 10 min, per IP and path.
+These are enforced in-process (`assertRateLimit` in `lib/api.js`), so they hold
+for the recommended single-instance deployments (one Vercel region via
+`regions: ["brussels1"]`, one Docker replica). They do **not** hold across
+instances: each serverless lambda / container keeps its own bucket.
+
+For hard guarantees behind multiple instances, add an edge rule — this is a
+dashboard change, not a code change:
+
+- **Vercel Firewall** (recommended on Vercel): Dashboard → Firewall → Custom
+  Rules → add a rate-limit rule matching `/api/(contact|smile-check|
+  request-info|appointments|newsletter)` at the same thresholds as above.
+  The in-app limiter stays as defence in depth.
+- **Self-hosted / Docker**: put a reverse proxy (Caddy `rate_limit`, nginx
+  `limit_req_zone`) in front of `:3005` with the same paths and thresholds.
+- **Cloudflare**: WAF → Rate limiting rules on the same paths.
+
+Do not "fix" this with a shared Redis store unless horizontal scale actually
+happens — it trades a dashboard toggle for a new stateful dependency.
 
 **Backups** — the database is the only stateful component. Back up MySQL
 nightly; uploads live on a volume that needs backing up separately.

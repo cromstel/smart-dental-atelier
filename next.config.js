@@ -52,13 +52,19 @@ const nextConfig = {
     // Content-Security-Policy for a Next.js Pages Router app with Tailwind:
     // - `script-src 'unsafe-inline'` is required: Next.js inlines the hydration
     //   payload (`self.__next_f.push`) and NextAuth's client bundle uses inline
-    //   bootstrapping. `'unsafe-eval'` is only needed in dev (SWC dev server).
+    //   bootstrapping.
+    // - `'unsafe-eval'` is dev-only (SWC dev server); production must not allow
+    //   it. `vercel.json` carries the production value for the edge.
     // - `style-src 'unsafe-inline'` covers styled-jsx and Tailwind's runtime
     //   style injection.
     // - `connect-src` stays `'self'` + Google (OAuth token exchange when enabled).
+    const scriptSrc =
+      process.env.NODE_ENV === 'production'
+        ? "script-src 'self' 'unsafe-inline'"
+        : "script-src 'self' 'unsafe-inline' 'unsafe-eval'";
     const csp = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      scriptSrc,
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
       "font-src 'self'",
@@ -98,6 +104,19 @@ const nextConfig = {
   // `pages/login.js`, not here: Next does not forward query strings across a
   // `redirects()` entry, and `callbackUrl` / `error` both have to survive.
 };
+
+/**
+ * Optional bundle analysis.
+ *
+ * Turbopack is the default builder (`next build`), so the one-off report
+ * comes from its native flag: `npx next build --experimental-analyze`.
+ *
+ * The `@next/bundle-analyzer` wrapper below is webpack-only and stays dormant
+ * unless the build is forced onto webpack: `ANALYZE=true npx next build
+ * --webpack`. Zero-cost in every other configuration.
+ */
+const withBundleAnalyzer = require('@next/bundle-analyzer')({ enabled: process.env.ANALYZE === 'true' });
+module.exports = withBundleAnalyzer(module.exports);
 
 /**
  * Next validates this object strictly and warns about unknown keys, so the
