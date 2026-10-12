@@ -44,6 +44,30 @@ const nextConfig = {
   // linting now runs through eslint.config.mjs via the `lint` script.
 
   async headers() {
+    // HSTS is ignored by browsers over plain HTTP (localhost dev), so it is safe
+    // to set unconditionally. The `includeSubDomains` and `preload` directives
+    // apply once the domain serves over HTTPS in production.
+    const hsts = 'max-age=63072000; includeSubDomains; preload';
+
+    // Content-Security-Policy for a Next.js Pages Router app with Tailwind:
+    // - `script-src 'unsafe-inline'` is required: Next.js inlines the hydration
+    //   payload (`self.__next_f.push`) and NextAuth's client bundle uses inline
+    //   bootstrapping. `'unsafe-eval'` is only needed in dev (SWC dev server).
+    // - `style-src 'unsafe-inline'` covers styled-jsx and Tailwind's runtime
+    //   style injection.
+    // - `connect-src` stays `'self'` + Google (OAuth token exchange when enabled).
+    const csp = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob:",
+      "font-src 'self'",
+      "connect-src 'self' https://accounts.google.com",
+      "frame-ancestors 'self'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join('; ');
+
     return [
       {
         source: '/:path*',
@@ -52,6 +76,8 @@ const nextConfig = {
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          { key: 'Strict-Transport-Security', value: hsts },
+          { key: 'Content-Security-Policy', value: csp },
         ],
       },
       {

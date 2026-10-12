@@ -695,6 +695,24 @@ specification, and why:
     history and any access log. POST makes the fallback harmless. The admin
     search box stays on GET, which is what it means.
 
+18. **Security headers are set in `next.config.js`, not middleware.** The
+    `headers()` config already existed for `nosniff`, `X-Frame-Options`,
+    `Referrer-Policy` and `Permissions-Policy`; HSTS and CSP were added there
+    rather than in a separate `_middleware.js` — one place, one reload, and
+    Next applies them to every response including API routes. The CSP allows
+    `'unsafe-inline'` scripts because Next.js inlines the hydration payload
+    (`self.__next_f.push`) and NextAuth's client bootstrapping uses inline
+    code; this is a known Pages Router limitation. If the app ever migrates to
+    the App Router with nonce-based CSP, tighten to `script-src 'self' 'nonce-…'`.
+
+    The in-memory rate limiter (`lib/api.js: assertRateLimit`) is deliberately
+    single-instance: on Vercel serverless each warm lambda holds its own bucket,
+    so a determined attacker can exceed the limit by distributing requests. For
+    hard guarantees, pair with an edge rule (Vercel WAF / Cloudflare Rate
+    Limiting) or swap the `Map` for a Redis-backed store. The current setup is
+    documented as sufficient for the recommended single-pod Docker / Vercel
+    deployment of a site at this traffic tier.
+
 ---
 
 ## Sources

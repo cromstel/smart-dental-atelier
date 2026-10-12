@@ -77,7 +77,7 @@ jobs:
         run: npm run lint
 
       - name: Unit and API tests
-        run: npm test -- --ci --coverage
+        run: npm run test:ci -- --ci --coverage
 
       - name: Apply migrations
         run: npx prisma migrate deploy

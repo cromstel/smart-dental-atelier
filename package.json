@@ -12,6 +12,7 @@
     "start": "next start -p 3005",
     "lint": "eslint .",
     "test": "jest --passWithNoTests",
+    "test:ci": "jest --passWithNoTests --detectOpenHandles --forceExit",
     "test:watch": "jest --watch",
     "test:e2e": "playwright test",
     "db:generate": "prisma generate",
