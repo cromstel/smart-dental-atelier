@@ -47,6 +47,7 @@
     "tsx": "4.23.15"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.4.0",
     "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "4.3.3",
     "@testing-library/dom": "10.4.2",

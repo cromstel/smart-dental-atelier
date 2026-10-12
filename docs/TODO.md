@@ -27,8 +27,21 @@
 - [x] `docs/WIKI.md` created (965 lines, 11 sections)
 - [x] `docs/PLAN.md`, `docs/TODO.md`, `docs/MEMORY.md` created
 
-## Deferred (Phase 2+)
+## Deferred
 
-- [ ] Edge rate-limit rule (Vercel WAF / Cloudflare)
-- [ ] Nonce-based CSP on App Router migration
-- [ ] One-off `next-bundle-analyzer` run
+- [ ] Nonce-based CSP — only on App Router migration (impossible on Pages
+      Router; hydration requires `'unsafe-inline'`). `unsafe-eval` already
+      dropped from production CSP.
+
+## Done
+
+- [x] Edge rate-limit rule — documented as dashboard change (Vercel Firewall /
+      Caddy / Cloudflare) in README Operations + going-live checklist; no
+      Redis store (boring-by-default)
+- [x] `vercel.json` headers synced with `next.config.js` (HSTS, CSP,
+      Permissions-Policy; X-Robots-Tag extended to `/auth/*`, `/api/*`)
+- [x] Production CSP drops `'unsafe-eval'` (dev keeps it for SWC);
+      verified by 16/16 auth e2e under prod CSP
+- [x] Bundle-analyzer run (`--experimental-analyze`, Turbopack native):
+      first-load ~494–517 KB uncompressed/route, ~73 KB gzip shared framework
+      chunk, no heavy third-party dep — no action needed

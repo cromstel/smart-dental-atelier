@@ -54,6 +54,24 @@
   requirement). Tighten to nonces only on App Router migration.
 - Portals + auth + api carry `X-Robots-Tag: noindex, nofollow`.
 
+## Phase 2 outcomes (2026-10-12)
+
+- CSP is env-aware: dev keeps `'unsafe-eval'` (SWC), production drops it.
+  `vercel.json` carries the production value (static, edge-applied) and is
+  synced with `next.config.js` — both must match, since dual CSP headers
+  intersect (all must pass). `vercel.json` X-Robots-Tag now covers
+  `/auth/*` + `/api/*`, not just `/admin` + `/portal`.
+- Edge rate limiting is a dashboard change (Vercel Firewall / Caddy
+  `rate_limit` / Cloudflare), documented in README Operations + going-live
+  checklist. No Redis store — boring-by-default until horizontal scale happens.
+- Bundle report (`npx next build --experimental-analyze`, Turbopack native;
+  `@next/bundle-analyzer` is webpack-only, kept dormant for
+  `ANALYZE=true npx next build --webpack`): first-load 494–517 KB
+  uncompressed per route, shared framework chunk 233 KB raw / ~73 KB gzip,
+  no heavy third-party dep. No action needed.
+- Tightened prod CSP verified: 16/16 auth e2e green (hydration, sign-in,
+  session handoff, guards).
+
 ## Test environment gotchas
 
 - Playwright does **not** load `.env` — export `ADMIN_EMAIL`/`ADMIN_PASSWORD`/
