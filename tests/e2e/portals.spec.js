@@ -249,6 +249,15 @@ test.describe('admin portal', () => {
     await page.goto('/book-appointment');
     await waitForHydration(page);
 
+    // The public API rejects submissions under 2 s (`isTooFast` in lib/api.js).
+    // Rather than sleeping to beat the floor, intercept the request and stamp a
+    // realistic `_t` — the bot check is covered by unit tests, so the e2e goal
+    // is the admin status change, not the anti-bot heuristic.
+    await page.route('**/api/appointments', async (route) => {
+      const postData = route.request().postDataJSON();
+      await route.continue({ postData: JSON.stringify({ ...postData, _t: 10 }) });
+    });
+
     const marker = `E2E appointment ${Date.now()}`;
     // Unique per run, and the admin search covers the e-mail column (not notes).
     const email = `e2e-${Date.now()}@example.com`;
@@ -259,12 +268,6 @@ test.describe('admin portal', () => {
     await page.getByLabel('Phone').fill('+32 478 54 74 75');
     await page.getByLabel('Preferred date').fill('2030-06-15');
     await page.getByLabel(/Anything we should know/).fill(marker);
-
-    // The public API treats a submission made within two seconds of the form
-    // appearing as a bot: it answers 200 with the success copy but stores
-    // nothing (`isTooFast` in lib/api.js). Playwright can fill the whole form
-    // that fast, so wait past the floor or the row never exists.
-    await page.waitForTimeout(2_200);
 
     await page.getByRole('button', { name: /request appointment/i }).click();
 
