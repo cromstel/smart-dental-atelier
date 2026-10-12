@@ -29,7 +29,7 @@ data:
   SMTP_PORT: '587'
   SMTP_USER: ''
   SMTP_PASSWORD: ''
-  NOTIFY_EMAIL: 'michal@smart-dentalatelier.cromstelit.com'
+  NOTIFY_EMAIL: 'admin@smart-dentalatelier.cromstelit.com'
 ---
 apiVersion: apps/v1
 kind: Deployment

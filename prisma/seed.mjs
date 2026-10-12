@@ -68,7 +68,7 @@ async function main() {
   console.log('Seeding Dental Atelier…');
 
   // ---------------------------------------------------------------- Admin
-  const adminEmail = (process.env.ADMIN_EMAIL || 'michal@smart-dentalatelier.cromstelit.com').toLowerCase();
+  const adminEmail = (process.env.ADMIN_EMAIL || 'admin@smart-dentalatelier.cromstelit.com').toLowerCase();
   const adminPassword = process.env.ADMIN_PASSWORD;
 
   if (!adminPassword) {
