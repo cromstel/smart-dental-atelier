@@ -30,7 +30,14 @@ export default function GoogleMapEmbed({
 }
 
 /** Click-to-load variant — preferred on the Contact page. */
-export function GoogleMapFacade({ src = SITE.mapEmbed, title, height = 420 }) {
+export function GoogleMapFacade({
+  // Same default as the component above. Without it `title` is `undefined`,
+  // React drops the attribute, and the map renders as an unnamed iframe —
+  // which fails "iframe has a unique title" for screen-reader users.
+  src = SITE.mapEmbed,
+  title = `Map showing ${SITE.legalName}, ${SITE.address.street}, ${SITE.address.postalCode} ${SITE.address.city}`,
+  height = 420,
+}) {
   return (
     <div className="relative overflow-hidden rounded-lg border border-white/10">
       <iframe

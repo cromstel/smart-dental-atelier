@@ -55,9 +55,12 @@ const nextConfig = {
     //   bootstrapping.
     // - `'unsafe-eval'` is dev-only (SWC dev server); production must not allow
     //   it. `vercel.json` carries the production value for the edge.
-    // - `style-src 'unsafe-inline'` covers styled-jsx and Tailwind's runtime
-    //   style injection.
+    // - `style-src 'unsafe-inline'` covers styled-jsx, Tailwind's runtime style
+    //   injection and the inline `style="border:0"` on the map iframe.
     // - `connect-src` stays `'self'` + Google (OAuth token exchange when enabled).
+    // - `frame-src` must name the Maps host: without an explicit value it falls
+    //   back to `default-src 'self'` and the contact-page map silently renders
+    //   blank. Verified live and pinned by an e2e assertion.
     const scriptSrc =
       process.env.NODE_ENV === 'production'
         ? "script-src 'self' 'unsafe-inline'"
@@ -69,9 +72,12 @@ const nextConfig = {
       "img-src 'self' data: blob:",
       "font-src 'self'",
       "connect-src 'self' https://accounts.google.com",
+      "frame-src https://www.google.com",
       "frame-ancestors 'self'",
+      "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
+      "upgrade-insecure-requests",
     ].join('; ');
 
     return [

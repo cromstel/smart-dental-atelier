@@ -226,6 +226,25 @@ await expect(page.getByText('Thank you. We received your smile check.')).toBeVis
     expect(missing, 'images without an alt attribute').toEqual([]);
   });
 
+  test('renders the contact page with a CSP-allowed map embed', async ({ page }) => {
+    // The map is a cross-origin iframe. A CSP violation is a browser-side
+    // console error — curl and a 200 say nothing — so it is asserted here.
+    const violations = [];
+    page.on('console', (message) => {
+      if (message.type() === 'error' && /Content Security Policy/.test(message.text())) {
+        violations.push(message.text());
+      }
+    });
+
+    await page.goto('/contact-us');
+
+    const map = page.locator('iframe[src*="google.com/maps"]');
+    await expect(map).toHaveCount(1);
+    await expect(map).toHaveAttribute('title', /Map showing Dental Atelier/);
+
+    expect(violations, `CSP violations on /contact-us: ${violations.join(' | ')}`).toEqual([]);
+  });
+
   test('returns a styled 404 for an unknown URL', async ({ page }) => {
     const response = await page.goto('/this-page-does-not-exist');
 
