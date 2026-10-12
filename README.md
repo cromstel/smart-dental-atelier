@@ -719,11 +719,31 @@ specification, and why:
     `headers()` config already existed for `nosniff`, `X-Frame-Options`,
     `Referrer-Policy` and `Permissions-Policy`; HSTS and CSP were added there
     rather than in a separate `_middleware.js` — one place, one reload, and
-    Next applies them to every response including API routes. The CSP allows
-    `'unsafe-inline'` scripts because Next.js inlines the hydration payload
-    (`self.__next_f.push`) and NextAuth's client bootstrapping uses inline
-    code; this is a known Pages Router limitation. If the app ever migrates to
-    the App Router with nonce-based CSP, tighten to `script-src 'self' 'nonce-…'`.
+    Next applies them to every response including API routes. `vercel.json`
+    carries the same values for the edge; the two must stay in sync because
+    multiple CSP headers intersect (every directive of every header must pass).
+
+    The CSP keeps `'unsafe-inline'` for scripts because Next.js inlines the
+    hydration payload (`self.__next_f.push`) and NextAuth's client bootstrapping
+    uses inline code. `'unsafe-eval'` is dev-only (SWC dev server) and is
+    dropped in production; this is the same split Next.js documents.
+
+    `frame-src` names `https://www.google.com` explicitly: without it the
+    directive falls back to `default-src 'self'` and the contact-page map
+    silently renders blank — the page still returns 200, so only a browser
+    console check catches it, which is what `tests/e2e/public.spec.js` now does.
+
+    **Why there is no nonce-based CSP**, and why "Pages Router can't" is the
+    wrong reason: Pages Router *can* do nonces (set the CSP header per request
+    in `_document.js` and pass it to `<Main>`/`<NextScript>`). Next.js' own
+    guidance is that nonces require **dynamic rendering** — *"Static
+    optimization and Incremental Static Regeneration (ISR) are disabled"*,
+    pages lose CDN caching and pay a server render per request. This app is
+    built on ISR by design (decision 13), and nothing here has the strict
+    requirement that prohibits `'unsafe-inline'` in the first place. So the
+    hardening stops at the env-aware `'unsafe-eval'` split; the nonce path
+    stays conditional on either an App Router migration or a decision to trade
+    ISR away.
 
     The in-memory rate limiter (`lib/api.js: assertRateLimit`) is deliberately
     single-instance: on Vercel serverless each warm lambda holds its own bucket,
