@@ -105,7 +105,7 @@ describe('seo helpers', () => {
     const jsonLd = organisationJsonLd({
       name: 'Dental Atelier',
       legalName: 'Dental Atelier Michal Siakel',
-      url: 'https://www.dentalatelier.co',
+      url: 'https://smart-dentalatelier.cromstelit.com',
       phone: '+32 2 376 43 26',
       vat: 'BE 0504872627',
       address: { street: 'Rue du Bourdon 100/8', postalCode: '1180', city: 'Uccle', countryCode: 'BE' },

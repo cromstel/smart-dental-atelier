@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test';
  * would catch a broken guard or a broken session cookie.
  */
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'michal@dentalatelier.co';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'michal@smart-dentalatelier.cromstelit.com';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 /**

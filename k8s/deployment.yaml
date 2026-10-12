@@ -18,8 +18,8 @@ metadata:
   name: dental-atelier-config
   namespace: dental-atelier
 data:
-  NEXTAUTH_URL: 'https://www.dentalatelier.co'
-  NEXT_PUBLIC_SITE_URL: 'https://www.dentalatelier.co'
+  NEXTAUTH_URL: 'https://smart-dentalatelier.cromstelit.com'
+  NEXT_PUBLIC_SITE_URL: 'https://smart-dentalatelier.cromstelit.com'
   NODE_ENV: 'production'
   PORT: '3005'
   # Extra origins allowed to POST to the public forms, comma separated.
@@ -29,7 +29,7 @@ data:
   SMTP_PORT: '587'
   SMTP_USER: ''
   SMTP_PASSWORD: ''
-  NOTIFY_EMAIL: 'michal@dentalatelier.co'
+  NOTIFY_EMAIL: 'michal@smart-dentalatelier.cromstelit.com'
 ---
 apiVersion: apps/v1
 kind: Deployment
