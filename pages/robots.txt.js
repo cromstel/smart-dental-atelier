@@ -10,7 +10,7 @@ export default function Robots() {
 }
 
 export async function getServerSideProps({ res }) {
-  const base = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.dentalatelier.co').replace(/\/$/, '');
+  const base = (process.env.NEXT_PUBLIC_SITE_URL || 'https://smart-dentalatelier.cromstelit.com').replace(/\/$/, '');
 
   const body = `User-agent: *
 Allow: /

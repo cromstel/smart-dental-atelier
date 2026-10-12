@@ -1,6 +1,6 @@
 # Dental Atelier
 
-A re-implementation of [dentalatelier.co](https://www.dentalatelier.co) — a
+A re-implementation of [dentalatelier.co](https://smart-dentalatelier.cromstelit.com) — a
 state-of-the-art dental laboratory in Uccle, Brussels — as a modern Next.js
 application with an **admin portal** and a **client portal**.
 
@@ -757,7 +757,7 @@ specification, and why:
 
 ## Sources
 
-Copy, images and structure come from [dentalatelier.co](https://www.dentalatelier.co)
+Copy, images and structure come from [dentalatelier.co](https://smart-dentalatelier.cromstelit.com)
 (© Dental Atelier Michal Siakel, VAT BE 0504872627). Patient photographs remain
 the property of the studio and are included here for the purpose of rebuilding
 their own site.

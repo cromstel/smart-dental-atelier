@@ -12,7 +12,7 @@ export default function Sitemap() {
 
 export async function getServerSideProps({ res }) {
   const settings = await getPageSeo('/');
-  const base = (settings.site?.url || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.dentalatelier.co').replace(
+  const base = (settings.site?.url || process.env.NEXT_PUBLIC_SITE_URL || 'https://smart-dentalatelier.cromstelit.com').replace(
     /\/$/,
     '',
   );

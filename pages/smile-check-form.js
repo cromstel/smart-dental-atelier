@@ -52,8 +52,8 @@ export default function SmileCheckFormPage({ questions = [] }) {
                   +32 2 376 43 26
                 </a>{' '}
                 or e-mail{' '}
-                <a href="mailto:contact@dentalatelier.co" className="link-underline">
-                  contact@dentalatelier.co
+                <a href="mailto:contact@smart-dentalatelier.cromstelit.com" className="link-underline">
+                  contact@smart-dentalatelier.cromstelit.com
                 </a>{' '}
                 and we will reply personally.
               </p>
