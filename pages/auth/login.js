@@ -17,7 +17,7 @@ import PrimaryButton from '@/components/ui/PrimaryButton';
  */
 export default function LoginPage() {
   return (
-    <Layout>
+    <Layout hideNavbar hideFooter>
       <Seo
         title="Sign in"
         description="Sign in to the Dental Atelier client portal."

@@ -9,20 +9,20 @@ import { SITE } from '@/lib/content';
  *
  * `main` gets `id="main"` so the skip link has a real target.
  */
-export default function Layout({ children, navbarVariant = 'light', className = '' }) {
+export default function Layout({ children, navbarVariant = 'light', className = '', hideNavbar = false, hideFooter = false }) {
   return (
     <div className="flex min-h-screen flex-col">
       <a href="#main" className="skip-link">
         Skip to main content
       </a>
 
-      <Navbar variant={navbarVariant} />
+      {!hideNavbar && <Navbar variant={navbarVariant} />}
 
       <main id="main" tabIndex={-1} className={`flex-1 focus:outline-none ${className}`}>
         {children}
       </main>
 
-      <Footer />
+      {!hideFooter && <Footer />}
 
       <noscript>
         <div className="border-t border-brand-400/30 bg-ink-800 p-4 text-center text-sm text-silver-300">

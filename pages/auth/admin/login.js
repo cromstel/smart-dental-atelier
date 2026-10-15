@@ -22,7 +22,7 @@ import { AUTH_ROUTES, safeCallbackUrl } from '@/lib/authRoutes';
  */
 export default function AdminLoginPage() {
   return (
-    <Layout>
+    <Layout hideNavbar hideFooter>
       <Seo
         title="Admin sign in"
         description="Sign in to the Dental Atelier admin portal."

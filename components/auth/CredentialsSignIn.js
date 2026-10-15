@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
 import { getSession, signIn } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import FormInput from '@/components/ui/FormInput';
@@ -143,6 +145,20 @@ export default function CredentialsSignIn({ variant = 'client', children }) {
 
   return (
     <>
+      {/* App logo — same on both auth variants */}
+      <div className="flex justify-center py-8 md:py-12">
+        <Link href="/" aria-label="Dental Atelier home" className="inline-block">
+          <Image
+            src="/images/logo-white.webp"
+            alt="Dental Atelier"
+            width={225}
+            height={65}
+            className="h-10 w-auto md:h-14"
+            priority
+          />
+        </Link>
+      </div>
+
       <div className="panel-gold">
         <h1 className="text-3xl">{config.heading}</h1>
         <p className="mt-3 text-sm text-silver-400">{config.intro}</p>
