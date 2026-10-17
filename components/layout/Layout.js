@@ -1,5 +1,6 @@
 import Navbar from './Navbar';
 import Footer from './Footer';
+import ScrollToTop from './ScrollToTop';
 import { SITE } from '@/lib/content';
 
 /**
@@ -37,6 +38,8 @@ export default function Layout({ children, navbarVariant = 'light', className = 
           .
         </div>
       </noscript>
+
+      <ScrollToTop />
     </div>
   );
 }
