@@ -15,7 +15,7 @@ import nextConfig from './next.config.js';
  * The suite needs a reachable database for the admin and portal flows; set
  * `DATABASE_URL` in `.env`. The tests create and clean up their own records.
  */
-const PORT = nextConfig.PORT || 3005;
+const PORT = nextConfig.PORT || 4040;
 
 /**
  * NextAuth sets its CSRF cookie for `NEXTAUTH_URL`'s host. If the suite browses

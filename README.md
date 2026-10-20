@@ -66,7 +66,7 @@ cp .env.example .env
 npx prisma migrate deploy   # create the schema
 npm run db:seed             # load the copy, FAQs, testimonials, gallery + an admin
 
-npm run dev                 # http://localhost:3005
+npm run dev                 # http://localhost:4040
 ```
 
 Sign in at `/auth/admin/login` with the `ADMIN_EMAIL` / `ADMIN_PASSWORD` from
@@ -81,19 +81,19 @@ docker compose exec app npx prisma migrate deploy
 docker compose exec app npm run db:seed
 ```
 
-The Compose stack brings up MySQL 8 and the app on `http://localhost:3005`, and
+The Compose stack brings up MySQL 8 and the app on `http://localhost:4040`, and
 keeps uploads in a named volume.
 
 ### Scripts
 
-The app listens on **port 3005** (chosen to avoid a clash with anything already
+The app listens on **port 4040** (chosen to avoid a clash with anything already
 on 3000). The port is set in three places that are kept in sync: the `dev` and
 `start` scripts, `PORT` in `next.config.js` — which Playwright imports — and
 `EXPOSE`/`ENV PORT` in the Dockerfile.
 
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Development server on :3005 with hot reload |
+| `npm run dev` | Development server on :4040 with hot reload |
 | `npm run build` | `prisma generate` + production build |
 | `npm start` | Serve the production build |
 | `npm run lint` | ESLint 9 flat config (`eslint.config.mjs`) |
@@ -589,7 +589,7 @@ dashboard change, not a code change:
   request-info|appointments|newsletter)` at the same thresholds as above.
   The in-app limiter stays as defence in depth.
 - **Self-hosted / Docker**: put a reverse proxy (Caddy `rate_limit`, nginx
-  `limit_req_zone`) in front of `:3005` with the same paths and thresholds.
+  `limit_req_zone`) in front of `:4040` with the same paths and thresholds.
 - **Cloudflare**: WAF → Rate limiting rules on the same paths.
 
 Do not "fix" this with a shared Redis store unless horizontal scale actually
@@ -734,16 +734,20 @@ specification, and why:
     console check catches it, which is what `tests/e2e/public.spec.js` now does.
 
     **Why there is no nonce-based CSP**, and why "Pages Router can't" is the
-    wrong reason: Pages Router *can* do nonces (set the CSP header per request
-    in `_document.js` and pass it to `<Main>`/`<NextScript>`). Next.js' own
-    guidance is that nonces require **dynamic rendering** — *"Static
-    optimization and Incremental Static Regeneration (ISR) are disabled"*,
-    pages lose CDN caching and pay a server render per request. This app is
-    built on ISR by design (decision 13), and nothing here has the strict
-    requirement that prohibits `'unsafe-inline'` in the first place. So the
-    hardening stops at the env-aware `'unsafe-eval'` split; the nonce path
-    stays conditional on either an App Router migration or a decision to trade
-    ISR away.
+    wrong reason: Pages Router *can* do nonces — a per-request CSP header with
+    `crypto.randomUUID()`, exactly the pattern in the Next.js docs. That
+    implementation was built, shipped, and then **measured and reverted**
+    (2026-10-20): ISR pages are served with `x-nextjs-cache: HIT`, so their
+    `<script>` tags were emitted at build time without a `nonce` attribute,
+    the per-request nonce CSP blocked every script, and the pages never
+    hydrated (sign-in timed out after two minutes). The Next.js docs say the
+    same thing in prose: *"Static pages are generated at build time, when no
+    request or response headers exist — so no nonce can be injected"* and
+    *"all pages must be dynamically rendered"*. This app is built on ISR by
+    design (decision 13), and nothing here has the strict requirement that
+    prohibits `'unsafe-inline'` in the first place. So the hardening stops at
+    the env-aware `'unsafe-eval'` split; the nonce path stays conditional on
+    either an App Router migration or a decision to trade ISR away.
 
     The in-memory rate limiter (`lib/api.js: assertRateLimit`) is deliberately
     single-instance: on Vercel serverless each warm lambda holds its own bucket,

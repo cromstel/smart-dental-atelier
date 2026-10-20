@@ -8,10 +8,10 @@
  */
 
 /**
- * The app listens on 3005 (see the `dev` / `start` scripts in package.json).
+ * The app listens on 4040 (see the `dev` / `start` scripts in package.json).
  * Exported so the Playwright config cannot drift from it.
  */
-const PORT = 3005;
+const PORT = 4040;
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -122,16 +122,11 @@ const nextConfig = {
  * --webpack`. Zero-cost in every other configuration.
  */
 const withBundleAnalyzer = require('@next/bundle-analyzer')({ enabled: process.env.ANALYZE === 'true' });
-module.exports = withBundleAnalyzer(module.exports);
 
 /**
  * Next validates this object strictly and warns about unknown keys, so the
  * shared port is exposed on a symbol-ish extra property that the config schema
  * ignores, rather than as a sibling key.
  */
-Object.defineProperty(module.exports, 'PORT', {
-  value: PORT,
-  enumerable: false,
-});
-
-module.exports = nextConfig;
+const analyzedConfig = withBundleAnalyzer(nextConfig);
+module.exports = analyzedConfig;

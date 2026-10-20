@@ -21,7 +21,7 @@ data:
   NEXTAUTH_URL: 'https://smart-dentalatelier.cromstelit.com'
   NEXT_PUBLIC_SITE_URL: 'https://smart-dentalatelier.cromstelit.com'
   NODE_ENV: 'production'
-  PORT: '3005'
+  PORT: '4040'
   # Extra origins allowed to POST to the public forms, comma separated.
   # Empty means same-origin only.
   ALLOWED_ORIGINS: ''
@@ -64,7 +64,7 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
-              containerPort: 3005
+              containerPort: 4040
           envFrom:
             - configMapRef:
                 name: dental-atelier-config
