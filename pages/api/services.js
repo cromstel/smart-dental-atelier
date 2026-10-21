@@ -1,5 +1,5 @@
 import { isDatabaseConfigured } from '@/lib/prisma';
-import { apiHandler, methodNotAllowed, HttpError } from '@/lib/api';
+import { apiHandler, methodNotAllowed, HttpError, publicCache } from '@/lib/api';
 import { getServices } from '@/lib/cms';
 
 /**
@@ -17,6 +17,8 @@ export default apiHandler(async (req, res) => {
   }
 
   const services = await getServices(category);
+
+  publicCache(res);
 
   return res.status(200).json({
     count: services.length,

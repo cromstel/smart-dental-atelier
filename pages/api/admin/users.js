@@ -1,6 +1,6 @@
 import { prisma, isDatabaseConfigured } from '@/lib/prisma';
-import { apiHandler, methodNotAllowed, requireAdmin, HttpError } from '@/lib/api';
-import { userSchema } from '@/lib/validation';
+import { apiHandler, methodNotAllowed, requireAdmin, HttpError, escapeLike } from '@/lib/api';
+import { userSchema, USER_ROLES } from '@/lib/validation';
 import { hashPassword } from '@/lib/auth';
 import { audit } from '@/lib/audit';
 import { parsePagination } from '@/lib/guards';
@@ -20,9 +20,14 @@ export default apiHandler(async (req, res) => {
   if (req.method === 'GET') {
     const { page, pageSize, skip, take } = parsePagination(req.query, { defaultSize: 25 });
     const where = {};
-    if (req.query.role) where.role = String(req.query.role).toUpperCase();
+    // An unknown role is ignored rather than passed to the database: the
+    // column is an enum, and an invalid value made the driver throw (a 500).
+    if (req.query.role && USER_ROLES.includes(String(req.query.role).toUpperCase())) {
+      where.role = String(req.query.role).toUpperCase();
+    }
     if (req.query.q) {
-      const needle = String(req.query.q).trim();
+      // Escaped: `%` and `_` are LIKE wildcards.
+      const needle = escapeLike(String(req.query.q).trim());
       where.OR = [{ name: { contains: needle } }, { email: { contains: needle } }];
     }
 

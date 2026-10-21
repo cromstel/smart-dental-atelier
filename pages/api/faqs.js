@@ -1,5 +1,5 @@
 import { prisma, isDatabaseConfigured } from '@/lib/prisma';
-import { apiHandler, methodNotAllowed, HttpError } from '@/lib/api';
+import { apiHandler, methodNotAllowed, HttpError, publicCache } from '@/lib/api';
 import { getFaqs } from '@/lib/cms';
 
 /**
@@ -21,6 +21,8 @@ export default apiHandler(async (req, res) => {
         faq.question.toLowerCase().includes(query) || faq.answer.toLowerCase().includes(query),
     );
   }
+
+  publicCache(res);
 
   return res.status(200).json({
     count: faqs.length,

@@ -1,5 +1,5 @@
 import { isDatabaseConfigured } from '@/lib/prisma';
-import { apiHandler, methodNotAllowed, HttpError } from '@/lib/api';
+import { apiHandler, methodNotAllowed, HttpError, publicCache } from '@/lib/api';
 import { getGallery } from '@/lib/cms';
 
 /**
@@ -12,6 +12,8 @@ export default apiHandler(async (req, res) => {
 
   const category = req.query.category ? String(req.query.category) : undefined;
   const images = await getGallery({ category });
+
+  publicCache(res);
 
   return res.status(200).json({
     count: images.length,

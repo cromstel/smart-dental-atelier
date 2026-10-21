@@ -1,5 +1,7 @@
 import { prisma, isDatabaseConfigured } from '@/lib/prisma';
 import { apiHandler, methodNotAllowed, requireUser, HttpError } from '@/lib/api';
+import { parsePagination } from '@/lib/guards';
+import { portalMessageSchema } from '@/lib/validation';
 
 /**
  * /api/portal/messages
@@ -17,9 +19,15 @@ export default apiHandler(async (req, res) => {
   const userId = guard.user.id;
 
   if (req.method === 'GET') {
+    // Capped: a client with a long history would otherwise pull every row
+    // in one response.
+    const { page, pageSize, skip, take } = parsePagination(req.query, { defaultSize: 25, maxSize: 100 });
+
     const messages = await prisma.contactMessage.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
+      skip,
+      take,
       select: {
         id: true,
         source: true,
@@ -30,11 +38,11 @@ export default apiHandler(async (req, res) => {
       },
     });
 
-    return res.status(200).json({ messages });
+    return res.status(200).json({ messages, page, pageSize });
   }
 
   if (req.method === 'POST') {
-    const { message, phone } = req.body || {};
+    const { message, phone } = portalMessageSchema.parse(req.body ?? {});
     const trimmed = String(message || '').trim();
     if (trimmed.length < 5) throw new HttpError(422, 'Please write a little more for us to work with.');
 

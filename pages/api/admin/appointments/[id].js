@@ -2,6 +2,7 @@ import { prisma, isDatabaseConfigured } from '@/lib/prisma';
 import { apiHandler, methodNotAllowed, requireAdmin, HttpError } from '@/lib/api';
 import { audit } from '@/lib/audit';
 import { notifyAppointment } from '@/lib/mailer';
+import { appointmentUpdateSchema } from '@/lib/validation';
 
 /** /api/admin/appointments/[id] — PUT (replace editable fields) and DELETE. */
 export default apiHandler(async (req, res) => {
@@ -16,30 +17,32 @@ export default apiHandler(async (req, res) => {
   if (!existing) throw new HttpError(404, 'Appointment not found.');
 
   if (req.method === 'PUT') {
-    const { firstName, lastName, email, phone, type, notes, internalNotes, scheduledAt, preferredDate, serviceId, status } =
-      req.body || {};
+    // Validated before it reaches the database: an unknown status or a
+    // malformed date used to fail as a driver error (a 500), which told the
+    // caller nothing about which field was wrong.
+    const data = appointmentUpdateSchema.parse(req.body ?? {});
 
     const appointment = await prisma.appointment.update({
       where: { id },
       data: {
-        ...(firstName !== undefined ? { firstName: String(firstName).trim() } : {}),
-        ...(lastName !== undefined ? { lastName: String(lastName).trim() } : {}),
-        ...(email !== undefined ? { email: String(email).trim().toLowerCase() } : {}),
-        ...(phone !== undefined ? { phone: phone || null } : {}),
-        ...(type !== undefined ? { type } : {}),
-        ...(notes !== undefined ? { notes: notes || null } : {}),
-        ...(internalNotes !== undefined ? { internalNotes: internalNotes || null } : {}),
-        ...(scheduledAt !== undefined ? { scheduledAt: scheduledAt ? new Date(scheduledAt) : null } : {}),
-        ...(preferredDate !== undefined ? { preferredDate: preferredDate ? new Date(preferredDate) : null } : {}),
-        ...(serviceId !== undefined ? { serviceId: serviceId ? Number(serviceId) : null } : {}),
-        ...(status !== undefined ? { status } : {}),
+        ...(data.firstName !== undefined ? { firstName: data.firstName } : {}),
+        ...(data.lastName !== undefined ? { lastName: data.lastName } : {}),
+        ...(data.email !== undefined ? { email: data.email.toLowerCase() } : {}),
+        ...(data.phone !== undefined ? { phone: data.phone || null } : {}),
+        ...(data.type !== undefined ? { type: data.type } : {}),
+        ...(data.notes !== undefined ? { notes: data.notes || null } : {}),
+        ...(data.internalNotes !== undefined ? { internalNotes: data.internalNotes || null } : {}),
+        ...(data.scheduledAt !== undefined ? { scheduledAt: data.scheduledAt } : {}),
+        ...(data.preferredDate !== undefined ? { preferredDate: data.preferredDate } : {}),
+        ...(data.serviceId !== undefined ? { serviceId: data.serviceId } : {}),
+        ...(data.status !== undefined ? { status: data.status } : {}),
       },
     });
 
     // Only bother the client when the slot actually moved.
     const slotChanged =
-      (scheduledAt !== undefined && String(scheduledAt) !== String(existing.scheduledAt)) ||
-      (status !== undefined && status === 'CONFIRMED' && existing.status !== 'CONFIRMED');
+      (data.scheduledAt !== undefined && String(data.scheduledAt) !== String(existing.scheduledAt)) ||
+      (data.status !== undefined && data.status === 'CONFIRMED' && existing.status !== 'CONFIRMED');
 
     if (slotChanged) {
       notifyAppointment(appointment).catch((error) =>
@@ -52,7 +55,7 @@ export default apiHandler(async (req, res) => {
       action: 'replace',
       entity: 'Appointment',
       entityId: id,
-      payload: { status, scheduledAt },
+      payload: { status: data.status, scheduledAt: data.scheduledAt },
     });
 
     return res.status(200).json(appointment);
