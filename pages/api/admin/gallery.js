@@ -12,14 +12,19 @@ import { parsePagination } from '@/lib/guards';
 /**
  * Where the transcoded images land.
  *
- * `GALLERY_STORAGE_DIR` is relative to the project root, so the default is
- * `public/uploads` — the directory Next serves statically. Point it elsewhere
- * (a mounted volume, an object-storage sync directory) without touching code.
+ * `GALLERY_STORAGE_DIR` may be relative to the project root (the default is
+ * `public/uploads` — the directory Next serves statically) or an absolute
+ * path (a mounted volume in the container). The bundler cannot statically
+ * trace a path that comes from the environment, so the dynamic call is opted
+ * out of tracing: without it the whole project would be traced into the
+ * deployment, which slows the build and can break the size limits.
  */
-const UPLOAD_DIR = path.resolve(
-  process.cwd(),
-  process.env.GALLERY_STORAGE_DIR || path.join('public', 'uploads'),
-);
+const CONFIGURED_DIR = process.env.GALLERY_STORAGE_DIR;
+
+const UPLOAD_DIR = CONFIGURED_DIR
+  ? path.resolve(/*turbopackIgnore: true*/ CONFIGURED_DIR)
+  : path.join(process.cwd(), 'public', 'uploads');
+
 const MAX_FILE_BYTES = 6 * 1024 * 1024;
 const ALLOWED = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif']);
 
@@ -36,10 +41,11 @@ const WEBP_QUALITY = 82;
 const WEBP_EFFORT = 6;
 
 /** Where formidable stages the raw upload before it is transcoded. */
-const TEMP_DIR = path.resolve(
-  process.cwd(),
-  process.env.GALLERY_TEMP_DIR || '.tmp-uploads',
-);
+const CONFIGURED_TEMP_DIR = process.env.GALLERY_TEMP_DIR;
+
+const TEMP_DIR = CONFIGURED_TEMP_DIR
+  ? path.resolve(/*turbopackIgnore: true*/ CONFIGURED_TEMP_DIR)
+  : path.join(process.cwd(), '.tmp-uploads');
 
 /**
  * /api/admin/gallery

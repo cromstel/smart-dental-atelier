@@ -69,23 +69,19 @@ if (port) args.push('--port', port);
 const host = process.env.HOST || readEnvFile('.env.local', 'HOST') || readEnvFile('.env', 'HOST');
 if (host) args.push('--hostname', host);
 
-const nextBin = path.join(
-  projectRoot,
-  'node_modules',
-  '.bin',
-  process.platform === 'win32' ? 'next.cmd' : 'next',
-);
+// The Next.js CLI is a Node script, so it is run through the current
+// interpreter rather than through the `.cmd` shim: no shell, no argument
+// quoting, and no deprecation warning on Windows.
+const nextCli = path.join(projectRoot, 'node_modules', 'next', 'dist', 'bin', 'next');
 
 console.log(
   `[run-next] ${command}${port ? ` on port ${port}` : ' (default port)'}` +
     `${host ? ` on ${host}` : ''}`,
 );
 
-const child = spawn(nextBin, args, {
+const child = spawn(process.execPath, [nextCli, ...args], {
   cwd: projectRoot,
   stdio: 'inherit',
-  // On Windows the .cmd shim needs the shell to resolve its own paths.
-  shell: process.platform === 'win32',
 });
 
 child.on('exit', (code, signal) => {

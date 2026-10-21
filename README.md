@@ -1,8 +1,8 @@
 # Dental Atelier
 
-A re-implementation of [dentalatelier.co](https://smart-dentalatelier.cromstelit.com) — a
-state-of-the-art dental laboratory in Uccle, Brussels — as a modern Next.js
-application with an **admin portal** and a **client portal**.
+A re-implementation of the **Dental Atelier** website — a state-of-the-art
+dental laboratory in Uccle, Brussels — as a modern Next.js application with an
+**admin portal** and a **client portal**.
 
 All copy is taken verbatim from the live site. The legacy Bootstrap/HTML build
 is replaced with React + Tailwind, Prisma + MySQL, and NextAuth.
@@ -814,6 +814,46 @@ specification, and why:
     the env-aware `'unsafe-eval'` split; the nonce path stays conditional on
     either an App Router migration or a decision to trade ISR away.
 
+19. **The JSON-LD blocks are escaped.** `JSON.stringify` does not escape `<`,
+    so a value containing `</script>` closes the `<script type="application/ld+json">`
+    element early and the browser parses the rest as markup — a stored XSS
+    through admin-editable content (FAQ answers, the settings registry).
+    `lib/seo.js` has `safeJson()`, which escapes `<`, `>`, `&` and the Unicode
+    line separators, and every injection point goes through it.
+
+20. **Settings are split in two, and the studio's values are read.** The
+    registry keys are dotted (`contact.email`) because they are database keys,
+    while the site reads flat properties (`settings.email`). Without the
+    mapping in `lib/cms.js` a saved value lands under a literal dotted key and
+    is never read — the Settings screen would save without changing anything.
+    The mapping is what makes the studio's edits reach the footer, the navbar,
+    the contact page, the JSON-LD and the meta descriptions.
+
+    The deployment's own values — the name, the legal name, the canonical URL
+    and the contact address — are *not* studio-owned: they come from the
+    environment, the admin screen shows them read-only, and the API refuses to
+    write them. Otherwise a row left over from an earlier deployment would
+    quietly override the environment, which is exactly what happened when the
+    domain changed.
+
+21. **Two names, on purpose.** `SITE.name` is the brand the studio trades
+    under — content, in the headings and the legal copy. `SITE.appName` is the
+    name of *this* deployment — the portal, the notification e-mails, the
+    console — and it comes from `APP_NAME`. Before this split the site read
+    "Smart Dental Atelier" in the chrome and "Dental Atelier" in the
+    sentences.
+
+22. **The mailer speaks the protocol in order.** It waits for each reply, and
+    the message body is only written after the server accepts `DATA` — writing
+    it earlier puts the body into the server's error text. The transport
+    follows the port: 465 is implicit TLS, 587 is plaintext plus `STARTTLS`
+    (handshaking immediately on 587 never establishes). `npm run mail:check`
+    walks the same conversation and reports the last stage that worked.
+
+23. **The seed refuses a placeholder password.** `CHANGE_ME` that reaches the
+    database is a working login whose password is published in this
+    repository, so `npm run db:seed` stops rather than create it.
+
     The in-memory rate limiter (`lib/api.js: assertRateLimit`) is deliberately
     single-instance: on Vercel serverless each warm lambda holds its own bucket,
     so a determined attacker can exceed the limit by distributing requests. For
@@ -826,7 +866,7 @@ specification, and why:
 
 ## Sources
 
-Copy, images and structure come from [dentalatelier.co](https://smart-dentalatelier.cromstelit.com)
+Copy, images and structure come from the studio's own site
 (© Dental Atelier Michal Siakel, VAT BE 0504872627). Patient photographs remain
 the property of the studio and are included here for the purpose of rebuilding
 their own site.

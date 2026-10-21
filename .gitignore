@@ -57,3 +57,7 @@ px prisma generate)
 generated/
 
 docs/
+
+# Agent instructions: local tooling notes, not part of the project.
+AGENTS.md
+
