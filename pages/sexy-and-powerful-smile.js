@@ -9,6 +9,8 @@ import SectionHeading from '@/components/marketing/SectionHeading';
 import ImageGallery from '@/components/marketing/ImageGallery';
 import CtaBanner from '@/components/marketing/CtaBanner';
 import { breadcrumbJsonLd } from '@/lib/seo';
+import { getSettings } from '@/lib/cms';
+import { SITE } from '@/lib/content';
 
 const BREADCRUMBS = [
   { label: 'Home', href: '/' },
@@ -21,9 +23,9 @@ const GALLERY = [
   { url: '/images/smile-sexy-3.webp', altText: 'Ceramic implant crown replacing a missing front tooth', title: 'Implant crown' },
 ];
 
-export default function SexyAndPowerfulSmilePage() {
+export default function SexyAndPowerfulSmilePage({ settings = SITE }) {
   return (
-    <Layout>
+    <Layout contact={settings}>
       <Seo
         title="Sexy & powerful smile"
         description="How smile aesthetics affect confidence, what a positive smile line is, and how veneers and crowns can improve crooked, gapped or discoloured teeth in weeks instead of years."
@@ -111,4 +113,9 @@ export default function SexyAndPowerfulSmilePage() {
       </Section>
     </Layout>
   );
+}
+
+export async function getStaticProps() {
+  const settings = await getSettings();
+  return { props: { settings }, revalidate: 600 };
 }

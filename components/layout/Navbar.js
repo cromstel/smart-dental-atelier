@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import { useEffect, useId, useRef, useState } from 'react';
 import { NAV_ITEMS, SITE } from '@/lib/content';
 import { useSession, signOut } from 'next-auth/react';
+import { telHref } from '@/lib/format';
 
 /**
  * Responsive top navigation.
@@ -16,7 +17,13 @@ import { useSession, signOut } from 'next-auth/react';
  *  - a "Book" call to action instead of a nav item named "Dental Atelier -
  *    Contact Us"
  */
-export default function Navbar({ menuItems = NAV_ITEMS, variant = 'light' }) {
+/**
+ * The top navigation.
+ *
+ * The contact details follow the studio's saved settings, so the number in
+ * the top bar always matches the one in the footer and on the contact page.
+ */
+export default function Navbar({ menuItems = NAV_ITEMS, variant = 'light', contact = {} }) {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
@@ -72,8 +79,8 @@ export default function Navbar({ menuItems = NAV_ITEMS, variant = 'light' }) {
           </Link>
           <span className="hidden sm:inline" aria-hidden="true" />
           <div className="flex items-center gap-4">
-            <a href={`tel:${SITE.phone.replace(/[^\d+]/g, '')}`} className="link-underline">
-              {SITE.phoneDisplay}
+            <a href={telHref(contact.phone || SITE.phone)} className="link-underline">
+              {contact.phoneDisplay || contact.phone || SITE.phoneDisplay}
             </a>
             <a
               href={SITE.facebook}

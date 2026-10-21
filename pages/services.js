@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/marketing/HeroSection';
 import SectionHeading from '@/components/marketing/SectionHeading';
 import InfoCard from '@/components/marketing/InfoCard';
 import CtaBanner from '@/components/marketing/CtaBanner';
-import { getServices } from '@/lib/cms';
+import { getServices, getSettings } from '@/lib/cms';
 import { serializeDates } from '@/lib/serialize';
 import { breadcrumbJsonLd } from '@/lib/seo';
 import { toParagraphs } from '@/lib/format';
@@ -17,9 +17,9 @@ const BREADCRUMBS = [
   { label: 'Services' },
 ];
 
-export default function ServicesPage({ services = [] }) {
+export default function ServicesPage({ services = [], settings = SITE }) {
   return (
-    <Layout>
+    <Layout contact={settings}>
       <Seo
         title="Services"
         description="Price estimation, free consultation, custom colour shading, digital smile design, pick-up and delivery and diagnostic case planning at Dental Atelier, Brussels."
@@ -123,5 +123,6 @@ export default function ServicesPage({ services = [] }) {
 
 export async function getStaticProps() {
   const services = await getServices('service');
-  return { props: serializeDates({ services }), revalidate: 300 };
+  const settings = await getSettings();
+  return { props: serializeDates({ services, settings }), revalidate: 300 };
 }

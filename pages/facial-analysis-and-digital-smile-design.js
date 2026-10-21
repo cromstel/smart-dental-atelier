@@ -8,6 +8,8 @@ import RequestInfoForm from '@/components/forms/RequestInfoForm';
 import ImageGallery from '@/components/marketing/ImageGallery';
 import CtaBanner from '@/components/marketing/CtaBanner';
 import { breadcrumbJsonLd } from '@/lib/seo';
+import { getSettings } from '@/lib/cms';
+import { SITE } from '@/lib/content';
 
 const BREADCRUMBS = [
   { label: 'Home', href: '/' },
@@ -20,9 +22,9 @@ const PROCESS_GALLERY = [
   { url: '/images/smile-sexy-2.webp', altText: 'Digital smile design preview on a portrait photograph', title: 'Digital preview' },
 ];
 
-export default function FacialAnalysisPage() {
+export default function FacialAnalysisPage({ settings = SITE }) {
   return (
-    <Layout>
+    <Layout contact={settings}>
       <Seo
         title="Facial analysis and Digital Smile Design"
         description="We measure the biometrical features of your face, analyse it digitally and show you on your portrait photograph what your new smile will look like before treatment starts."
@@ -157,4 +159,9 @@ export default function FacialAnalysisPage() {
       </Section>
     </Layout>
   );
+}
+
+export async function getStaticProps() {
+  const settings = await getSettings();
+  return { props: { settings }, revalidate: 600 };
 }

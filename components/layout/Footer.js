@@ -3,9 +3,24 @@ import Image from 'next/image';
 import { SITE, NAV_ITEMS } from '@/lib/content';
 import { telHref } from '@/lib/format';
 
-/** Site footer with contact details, navigation and legal links. */
-export default function Footer({ address, phone, email, copyright }) {
-  const lines = address || SITE.address.lines;
+/**
+ * Site footer with contact details, navigation and legal links.
+ *
+ * The contact block follows the studio's saved settings, so editing
+ * "contact.phone" in the admin portal changes the footer on every page and
+ * not only the contact page. `contact` is the merged settings object the
+ * pages load; anything it does not carry falls back to the bundled values.
+ */
+export default function Footer({ contact = {}, copyright }) {
+  const lines = contact.address?.lines || SITE.address.lines;
+  const mobile = contact.mobile || SITE.mobile;
+  const mobileDisplay = contact.mobileDisplay || mobile;
+  const phone = contact.phone || SITE.phone;
+  const phoneDisplay = contact.phoneDisplay || phone;
+  const email = contact.email || SITE.email;
+  const vat = contact.vat || SITE.vat;
+  const facebook = contact.facebook || SITE.facebook;
+  const tagline = contact.tagline || SITE.tagline;
   const year = new Date().getFullYear();
 
   return (
@@ -19,8 +34,8 @@ export default function Footer({ address, phone, email, copyright }) {
             height={65}
             className="h-10 w-auto"
           />
-          <p className="mt-4 text-sm leading-relaxed text-silver-400">{SITE.tagline}</p>
-          <p className="mt-4 text-sm text-silver-500">VAT {SITE.vat}</p>
+          <p className="mt-4 text-sm leading-relaxed text-silver-400">{tagline}</p>
+          <p className="mt-4 text-sm text-silver-500">VAT {vat}</p>
         </div>
 
         <div>
@@ -31,16 +46,16 @@ export default function Footer({ address, phone, email, copyright }) {
                 {line}
               </span>
             ))}
-            <a href={telHref(phone || SITE.mobile)} className="link-underline block pt-2">
-              Mobile: {phone || SITE.mobileDisplay}
+            <a href={telHref(mobile)} className="link-underline block pt-2">
+              Mobile: {mobileDisplay}
             </a>
-            <a href={`tel:${SITE.phone.replace(/[^\d+]/g, '')}`} className="link-underline block">
-              Phone: {SITE.phoneDisplay}
+            <a href={telHref(phone)} className="link-underline block">
+              Phone: {phoneDisplay}
             </a>
-            <a href={`mailto:${email || SITE.email}`} className="link-underline block">
-              {email || SITE.email}
+            <a href={`mailto:${email}`} className="link-underline block">
+              {email}
             </a>
-            <a href={SITE.facebook} target="_blank" rel="noopener noreferrer" className="link-underline block">
+            <a href={facebook} target="_blank" rel="noopener noreferrer" className="link-underline block">
               Follow us on Facebook
             </a>
           </address>

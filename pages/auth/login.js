@@ -3,6 +3,7 @@ import Layout from '@/components/layout/Layout';
 import Seo from '@/components/Seo';
 import CredentialsSignIn from '@/components/auth/CredentialsSignIn';
 import PrimaryButton from '@/components/ui/PrimaryButton';
+import { getSettings } from '@/lib/cms';
 
 /**
  * Client sign-in: `/auth/login`, the whole `/auth/*` family's entry point.
@@ -15,9 +16,9 @@ import PrimaryButton from '@/components/ui/PrimaryButton';
  * The form itself lives in `components/auth/CredentialsSignIn.js`, which the
  * admin page renders with its own variant.
  */
-export default function LoginPage() {
+export default function LoginPage({ contact }) {
   return (
-    <Layout hideNavbar hideFooter>
+    <Layout hideNavbar hideFooter contact={contact}>
       <Seo
         title="Sign in"
         description="Sign in to the Dental Atelier client portal."
@@ -27,7 +28,7 @@ export default function LoginPage() {
 
       <div className="container mx-auto flex min-h-[70vh] items-center justify-center py-16">
         <div className="w-full max-w-md">
-          <CredentialsSignIn variant="client">
+          <CredentialsSignIn contact={contact} variant="client">
             <div className="panel mt-6">
               <h2 className="text-lg">No account yet?</h2>
               <p className="mt-3 text-sm text-silver-400">
@@ -56,4 +57,9 @@ export default function LoginPage() {
       </div>
     </Layout>
   );
+}
+
+export async function getStaticProps() {
+  const settings = await getSettings();
+  return { props: { contact: settings }, revalidate: 600 };
 }

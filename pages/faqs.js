@@ -5,9 +5,9 @@ import { PageHeader } from '@/components/marketing/HeroSection';
 import FAQAccordion from '@/components/marketing/FAQAccordion';
 import ContactForm from '@/components/forms/ContactForm';
 import { SITE } from '@/lib/content';
-import { getFaqs } from '@/lib/cms';
+import { getFaqs, getSettings } from '@/lib/cms';
 import { serializeDates } from '@/lib/serialize';
-import { breadcrumbJsonLd, faqJsonLd } from '@/lib/seo';
+import { breadcrumbJsonLd, faqJsonLd, jsonLdScript } from '@/lib/seo';
 
 const BREADCRUMBS = [
   { label: 'Home', href: '/' },
@@ -23,9 +23,9 @@ const CATEGORY_LABELS = [
   { value: 'COST', label: 'Cost' },
 ];
 
-export default function FaqsPage({ faqs = [] }) {
+export default function FaqsPage({ faqs = [], settings = SITE }) {
   return (
-    <Layout>
+    <Layout contact={settings}>
       <Seo
         title="FAQs"
         description="Answers about porcelain veneers, crowns, bridges, implant crowns, ceramic inlays, diagnostic wax up, digital smile design and treatment costs."
@@ -34,7 +34,7 @@ export default function FaqsPage({ faqs = [] }) {
       >
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd(faqs)) }}
+          dangerouslySetInnerHTML={jsonLdScript(faqJsonLd(faqs))}
         />
       </Seo>
 
@@ -89,5 +89,6 @@ export default function FaqsPage({ faqs = [] }) {
 
 export async function getStaticProps() {
   const faqs = await getFaqs();
-  return { props: serializeDates({ faqs }), revalidate: 300 };
+  const settings = await getSettings();
+  return { props: serializeDates({ faqs, settings }), revalidate: 300 };
 }

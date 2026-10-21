@@ -9,18 +9,18 @@ import Timeline from '@/components/marketing/Timeline';
 import ImageGallery from '@/components/marketing/ImageGallery';
 import CtaBanner, { InlineCta } from '@/components/marketing/CtaBanner';
 import { COURSES, SITE } from '@/lib/content';
-import { getMilestones, getGallery } from '@/lib/cms';
+import { getGallery, getMilestones, getSettings } from '@/lib/cms';
 import { serializeDates } from '@/lib/serialize';
-import { breadcrumbJsonLd, organisationJsonLd } from '@/lib/seo';
+import { breadcrumbJsonLd, organisationJsonLd, jsonLdScript } from '@/lib/seo';
 
 const BREADCRUMBS = [
   { label: 'Home', href: '/' },
   { label: 'About Us' },
 ];
 
-export default function AboutPage({ milestones = [], labGallery = [] }) {
+export default function AboutPage({ milestones = [], labGallery = [], settings = SITE }) {
   return (
-    <Layout>
+    <Layout contact={settings}>
       <Seo
         title="About – Dental Atelier"
         description="Dental Atelier is here to empower you to live a healthy, happy life with a peace of mind. Meet Michal Siakel, our director, and read about our latest courses and mission."
@@ -159,7 +159,7 @@ export default function AboutPage({ milestones = [], labGallery = [] }) {
 
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organisationJsonLd(SITE)) }}
+        dangerouslySetInnerHTML={jsonLdScript(organisationJsonLd(settings))}
       />
     </Layout>
   );
@@ -170,5 +170,6 @@ export async function getStaticProps() {
     getMilestones(),
     getGallery({ category: 'lab' }),
   ]);
-  return { props: serializeDates({ milestones, labGallery }), revalidate: 600 };
+  const settings = await getSettings();
+  return { props: serializeDates({ milestones, labGallery, settings }), revalidate: 600 };
 }

@@ -4,6 +4,7 @@ import CredentialsSignIn from '@/components/auth/CredentialsSignIn';
 import PrimaryButton from '@/components/ui/PrimaryButton';
 import { getSessionUser } from '@/lib/guards';
 import { AUTH_ROUTES, safeCallbackUrl } from '@/lib/authRoutes';
+import { getSettings } from '@/lib/cms';
 
 /**
  * Staff sign-in: `/auth/admin/login`.
@@ -20,7 +21,7 @@ import { AUTH_ROUTES, safeCallbackUrl } from '@/lib/authRoutes';
  * database rather than trusting the token, so a deactivated account still gets
  * the form — and cannot sign in at all.
  */
-export default function AdminLoginPage() {
+export default function AdminLoginPage({ contact }) {
   return (
     <Layout hideNavbar hideFooter>
       <Seo
@@ -32,7 +33,7 @@ export default function AdminLoginPage() {
 
       <div className="container mx-auto flex min-h-[70vh] items-center justify-center py-16">
         <div className="w-full max-w-md">
-          <CredentialsSignIn variant="admin">
+          <CredentialsSignIn contact={contact} variant="admin">
             <div className="panel mt-6">
               <h2 className="text-lg">Staff accounts only</h2>
               <p className="mt-3 text-sm text-silver-400">
@@ -57,6 +58,7 @@ export default function AdminLoginPage() {
 
 export async function getServerSideProps({ req, res, query }) {
   const { user } = await getSessionUser(req, res);
+  const contact = await getSettings();
 
   if (user?.role === 'ADMIN') {
     // Temporary (307), never 308: where this lands depends on the session and
@@ -67,8 +69,8 @@ export async function getServerSideProps({ req, res, query }) {
     res.writeHead(307, { Location: destination });
     res.end();
 
-    return { props: {} };
+    return { props: { contact } };
   }
 
-  return { props: {} };
+  return { props: { contact } };
 }

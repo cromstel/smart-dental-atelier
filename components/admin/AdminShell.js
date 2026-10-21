@@ -143,7 +143,7 @@ export default function AdminShell({ title, description, actions, children, wide
       </div>
 
       <footer className="border-t border-white/5 py-6 text-center text-xs text-silver-600">
-        {SITE.name} admin portal — all actions are recorded in the audit log.
+        {SITE.appName} admin portal — all actions are recorded in the audit log.
       </footer>
     </div>
   );

@@ -2,12 +2,13 @@ import Link from 'next/link';
 import Layout from '@/components/layout/Layout';
 import Seo from '@/components/Seo';
 import PrimaryButton from '@/components/ui/PrimaryButton';
-import { NAV_ITEMS } from '@/lib/content';
+import { NAV_ITEMS, SITE } from '@/lib/content';
+import { getSettings } from '@/lib/cms';
 
 /** 404 — kept in the site's own chrome so it feels like part of the site. */
-export default function NotFound() {
+export default function NotFound({ settings = SITE }) {
   return (
-    <Layout>
+    <Layout contact={settings}>
       <Seo
         title="Page not found"
         description="The page you were looking for does not exist. Try the navigation or the smile check form instead."
@@ -44,4 +45,9 @@ export default function NotFound() {
       </div>
     </Layout>
   );
+}
+
+export async function getStaticProps() {
+  const settings = await getSettings();
+  return { props: { settings }, revalidate: 600 };
 }
