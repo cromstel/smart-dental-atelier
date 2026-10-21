@@ -65,13 +65,20 @@ async function upsertEmpty(model, where, create, patch) {
 }
 
 async function main() {
-  console.log('Seeding Dental Atelier…');
+  console.log(`Seeding ${process.env.APP_NAME || 'the site'}…`);
 
   // ---------------------------------------------------------------- Admin
-  const adminEmail = (process.env.ADMIN_EMAIL || 'admin@smart-dentalatelier.local').toLowerCase();
+  // Both values come from the environment: seeding an account under a
+  // hardcoded address would create a login nobody knows the password for.
+  const adminEmail = (process.env.ADMIN_EMAIL || '').toLowerCase();
   const adminPassword = process.env.ADMIN_PASSWORD;
 
-  if (!adminPassword) {
+  if (!adminEmail) {
+    console.warn(
+      'ADMIN_EMAIL is not set — skipping the admin account.\n' +
+        '         Set it in .env, or create one later with: npm run create-admin',
+    );
+  } else if (!adminPassword) {
     console.warn(
       'ADMIN_PASSWORD is not set — skipping the admin account.\n' +
         '         Create one later with: npm run create-admin',

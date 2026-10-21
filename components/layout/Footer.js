@@ -14,7 +14,7 @@ export default function Footer({ address, phone, email, copyright }) {
         <div>
           <Image
             src="/images/logo-white.webp"
-            alt="Dental Atelier"
+            alt={SITE.name}
             width={225}
             height={65}
             className="h-10 w-auto"

@@ -14,7 +14,7 @@ const BREADCRUMBS = [
   { label: 'Book an appointment' },
 ];
 
-export default function BookAppointmentPage({ services = [] }) {
+export default function BookAppointmentPage({ services = [], timeZone = '', durationMinutes = 0 }) {
   return (
     <Layout>
       <Seo
@@ -35,6 +35,8 @@ export default function BookAppointmentPage({ services = [] }) {
           <div className="panel">
             <AppointmentForm
               services={services}
+              timeZone={timeZone}
+              durationMinutes={durationMinutes}
               description="Tell us who you are and when you are available. Fields marked * are required."
             />
           </div>
@@ -98,5 +100,14 @@ export default function BookAppointmentPage({ services = [] }) {
 export async function getStaticProps() {
   const products = await getServices('product');
   const services = await getServices('service');
-  return { props: serializeDates({ services: [...products, ...services] }), revalidate: 600 };
+  return {
+    props: serializeDates({
+      services: [...products, ...services],
+      // The studio's timezone and slot length come from the environment, so the
+      // booking page always describes the real schedule.
+      timeZone: process.env.APPOINTMENT_TIME_ZONE || '',
+      durationMinutes: Number(process.env.APPOINTMENT_DURATION_MINUTES) || 0,
+    }),
+    revalidate: 600,
+  };
 }

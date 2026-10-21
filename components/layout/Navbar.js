@@ -106,7 +106,7 @@ export default function Navbar({ menuItems = NAV_ITEMS, variant = 'light' }) {
           <Link href="/" className="flex items-center gap-3" aria-label={`${SITE.name} home`}>
             <Image
               src="/images/logo-white.webp"
-              alt="Dental Atelier"
+              alt={SITE.name}
               width={225}
               height={65}
               className="h-10 w-auto"

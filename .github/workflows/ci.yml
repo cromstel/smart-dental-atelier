@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [main]
 
+# The port the suite runs against. Every URL below derives from it, so the
+# number exists in exactly one place.
+env:
+  PORT: 4040
+  APP_NAME: dental-atelier
+
 # A new push to the same branch supersedes the previous run.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -36,12 +42,15 @@ jobs:
           --health-retries=12
 
     env:
+      PORT: ${{ env.PORT }}
+      APP_NAME: ${{ env.APP_NAME }}
+      NEXT_PUBLIC_APP_NAME: ${{ env.APP_NAME }}
       DATABASE_URL: mysql://smart_dental_atelier:smart_dental_atelier@127.0.0.1:3306/smart_dental_atelier
-      NEXTAUTH_URL: http://127.0.0.1:4040
+      NEXTAUTH_URL: http://127.0.0.1:${{ env.PORT }}
       NEXTAUTH_SECRET: ci-only-secret-not-used-anywhere-real
       ADMIN_EMAIL: ci@dentalatelier.local
       ADMIN_PASSWORD: CiAdminPassword-2026
-      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:4040
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:${{ env.PORT }}
 
     steps:
       - uses: actions/checkout@v7
@@ -92,20 +101,20 @@ jobs:
         run: |
           npm start &
           for i in $(seq 1 30); do
-            if curl -sf http://127.0.0.1:4040/api/health > /tmp/health.json; then
+            if curl -sf http://127.0.0.1:$PORT/api/health > /tmp/health.json; then
               break
             fi
             sleep 2
           done
           cat /tmp/health.json
-          curl -sf http://127.0.0.1:4040/api/health | grep -q '"database":"ok"'
+          curl -sf http://127.0.0.1:$PORT/api/health | grep -q '"database":"ok"'
           for path in / /about-us /services /faqs /contact-us /portfolio /sitemap.xml /robots.txt; do
-            code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:4040$path")
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT$path")
             echo "$path -> $code"
             test "$code" = "200"
           done
           # Admin surfaces must not be crawlable.
-          curl -s -D - -o /dev/null http://127.0.0.1:4040/admin | grep -qi 'x-robots-tag: noindex'
+          curl -s -D - -o /dev/null http://127.0.0.1:$PORT/admin | grep -qi 'x-robots-tag: noindex'
 
       - name: Upload coverage
         if: always()
@@ -137,12 +146,15 @@ jobs:
           --health-retries=12
 
     env:
+      PORT: ${{ env.PORT }}
+      APP_NAME: ${{ env.APP_NAME }}
+      NEXT_PUBLIC_APP_NAME: ${{ env.APP_NAME }}
       DATABASE_URL: mysql://smart_dental_atelier:smart_dental_atelier@127.0.0.1:3306/smart_dental_atelier
-      NEXTAUTH_URL: http://127.0.0.1:4040
+      NEXTAUTH_URL: http://127.0.0.1:${{ env.PORT }}
       NEXTAUTH_SECRET: ci-only-secret-not-used-anywhere-real
       ADMIN_EMAIL: ci@dentalatelier.local
       ADMIN_PASSWORD: CiAdminPassword-2026
-      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:4040
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:${{ env.PORT }}
 
     steps:
       - uses: actions/checkout@v7
@@ -175,7 +187,7 @@ jobs:
       - name: Build
         run: npm run build
 
-      # webServer in playwright.config.js runs `npm start`, which binds 4040.
+      # webServer in playwright.config.js runs `npm start`, which binds $PORT.
       - name: Run the E2E suite
         run: npx playwright test
 

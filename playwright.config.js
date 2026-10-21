@@ -9,13 +9,19 @@ import nextConfig from './next.config.js';
  * the dev server: the E2E suite is meant to catch the issues that only appear
  * after optimisation and static generation.
  *
- * The port comes from `next.config.js`, which is the same value the `dev` and
- * `start` scripts use, so the three cannot drift apart.
+ * The port comes from `PORT` in the environment (or `.env`), the same value the
+ * server binds to, so the two cannot drift apart.
  *
  * The suite needs a reachable database for the admin and portal flows; set
  * `DATABASE_URL` in `.env`. The tests create and clean up their own records.
  */
-const PORT = nextConfig.PORT || 4040;
+/**
+ * The port under test.
+ *
+ * `PORT` comes from the environment (or `.env`); the fallback is Next.js'
+ * own default, so the number is never duplicated in the repository.
+ */
+const PORT = Number(process.env.PORT || readEnvFile('PORT') || nextConfig.PORT) || 3000;
 
 /**
  * NextAuth sets its CSRF cookie for `NEXTAUTH_URL`'s host. If the suite browses

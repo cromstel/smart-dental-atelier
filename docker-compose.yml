@@ -5,7 +5,7 @@
 #   docker compose exec app npx prisma migrate deploy
 #   docker compose exec app npm run db:seed
 #
-# The app is published on http://localhost:4040.
+# The app is published on http://localhost:$PORT (see `PORT` in .env).
 
 services:
   db:
@@ -44,22 +44,35 @@ services:
     environment:
       # Host `db`, port 3306 — the *internal* port, not the mapped 3307.
       DATABASE_URL: mysql://${MYSQL_USER:-smart_dental_atelier}:${MYSQL_PASSWORD:-smart_dental_atelier}@db:3306/${MYSQL_DATABASE:-smart_dental_atelier}
-      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:4040}
+      # The listen port. One value, in `.env`; everything else derives from it.
+      PORT: ${PORT:-3000}
+      APP_NAME: ${APP_NAME:-}
+      NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:?set NEXTAUTH_URL in .env}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?set NEXTAUTH_SECRET in .env}
-      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:4040}
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@smart-dentalatelier.local}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?set NEXT_PUBLIC_SITE_URL in .env}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+      SMTP_PROVIDER: ${SMTP_PROVIDER:-}
       SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_PORT: ${SMTP_PORT:-}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
       NOTIFY_EMAIL: ${NOTIFY_EMAIL:-}
+      GALLERY_STORAGE_DIR: ${GALLERY_STORAGE_DIR:-}
+      APPOINTMENT_TIME_ZONE: ${APPOINTMENT_TIME_ZONE:-}
+      APPOINTMENT_DURATION_MINUTES: ${APPOINTMENT_DURATION_MINUTES:-}
+      DEBUG_MODE: ${DEBUG_MODE:-false}
     ports:
-      - '4040:4040'
+      # Host and container both use the configured port.
+      - '${PORT:-3000}:${PORT:-3000}'
     volumes:
-      # Admin gallery uploads survive a container rebuild.
-      - uploads:/app/public/uploads
+      # Admin gallery uploads survive a container rebuild. The mount follows
+      # `GALLERY_STORAGE_DIR`, so pointing the app at another directory also
+      # moves the volume with it.
+      - uploads:/app/${GALLERY_STORAGE_DIR:-public/uploads}
 
 volumes:
   db_data:

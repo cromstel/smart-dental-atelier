@@ -66,7 +66,7 @@ cp .env.example .env
 npx prisma migrate deploy   # create the schema
 npm run db:seed             # load the copy, FAQs, testimonials, gallery + an admin
 
-npm run dev                 # http://localhost:4040
+npm run dev                 # http://localhost:$PORT  (PORT comes from .env)
 ```
 
 Sign in at `/auth/admin/login` with the `ADMIN_EMAIL` / `ADMIN_PASSWORD` from
@@ -81,19 +81,55 @@ docker compose exec app npx prisma migrate deploy
 docker compose exec app npm run db:seed
 ```
 
-The Compose stack brings up MySQL 8 and the app on `http://localhost:4040`, and
+The Compose stack brings up MySQL 8 and the app on the port from `PORT`, and
 keeps uploads in a named volume.
+
+### Configuration
+
+**Nothing that identifies or locates the app is hardcoded.** The port, the
+application name, the canonical URL, every secret and the whole SMTP setup
+come from the environment, so the same build can be deployed under a different
+name, on a different port, against a different mail provider.
+
+| Variable | Purpose |
+| --- | --- |
+| `APP_NAME` / `NEXT_PUBLIC_APP_NAME` | The name in the navbar, the admin shell, the e-mails and the Open Graph tags. The `NEXT_PUBLIC_` copy is the one the browser bundle sees — set both. |
+| `APP_LEGAL_NAME` | The legal entity, used in the JSON-LD organisation block. |
+| `PORT` | The port the server binds to. `npm run dev` / `npm run start` read it; the Dockerfile takes it as a runtime variable; Compose interpolates it; the Kubernetes manifests substitute it. |
+| `NEXTAUTH_URL` | The canonical origin. NextAuth's CSRF cookie is bound to it, and it must match the address visitors use. |
+| `NEXT_PUBLIC_SITE_URL` | Canonical URLs, sitemap, `robots.txt`, OG tags, links in notification e-mails. |
+| `NEXTAUTH_SECRET` | Signs the session JWT **and** peppers the newsletter unsubscribe tokens. `openssl rand -base64 32`. |
+| `DATABASE_URL` | MySQL connection string. Percent-encode the password: a literal `/` breaks URL parsing (`/` → `%2F`). |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | The account created by `npm run db:seed` and `npm run create-admin`. Both are required for the seed; there is no fallback address. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional. The OAuth provider is enabled only when both are set. |
+| `SMTP_PROVIDER` | Selects the default port for a known provider (`gmail`, `smtp`, `sendgrid`, `mailgun`, `local`). |
+| `SMTP_HOST` / `SMTP_PORT` | The mail server. `SMTP_PORT` falls back to the provider's default. |
+| `SMTP_USER` / `SMTP_PASSWORD` | The credentials. For Gmail this is an **app password**, not the account password. |
+| `SMTP_FROM` | The envelope sender; defaults to `SMTP_USER`. |
+| `NOTIFY_EMAIL` | Where inquiry and appointment notifications are delivered. |
+| `GALLERY_STORAGE_DIR` | Where the transcoded images are written, relative to the project root (default `public/uploads`). `GALLERY_TEMP_DIR` stages the raw upload, `GALLERY_URL_PREFIX` is the public path they are served under. |
+| `APPOINTMENT_TIME_ZONE` | The studio's timezone, shown on the booking form. |
+| `APPOINTMENT_DURATION_MINUTES` | The length of one appointment slot. |
+| `ALLOWED_ORIGINS` | Extra origins allowed to POST to the public forms. Empty means same-origin only. |
+| `DEBUG_MODE` | Adds the underlying error message to API responses. Leave off in production. |
+
+`.env.example` lists every one of them with a placeholder. `.env.local`
+overrides `.env` for local development — and **an exported variable beats
+both**, which is why the E2E suite must not have `.env` exported into the
+process: it points at the remote database, and the app then answers
+`503 pool timeout` while the same code reports `database: ok` without it.
 
 ### Scripts
 
-The app listens on **port 4040** (chosen to avoid a clash with anything already
-on 3000). The port is set in three places that are kept in sync: the `dev` and
-`start` scripts, `PORT` in `next.config.js` — which Playwright imports — and
-`EXPOSE`/`ENV PORT` in the Dockerfile.
+The listen port is set in **one** place: `PORT` in `.env`. The `dev` and
+`start` scripts pass no `-p`, `next.config.js` reads `process.env.PORT`,
+Playwright reads the same value (falling back to `.env`), the Dockerfile takes
+it as a runtime variable, Compose interpolates it, and the Kubernetes manifests
+substitute it.
 
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Development server on :4040 with hot reload |
+| `npm run dev` | Development server on `$PORT` with hot reload |
 | `npm run build` | `prisma generate` + production build |
 | `npm start` | Serve the production build |
 | `npm run lint` | ESLint 9 flat config (`eslint.config.mjs`) |
@@ -589,7 +625,8 @@ dashboard change, not a code change:
   request-info|appointments|newsletter)` at the same thresholds as above.
   The in-app limiter stays as defence in depth.
 - **Self-hosted / Docker**: put a reverse proxy (Caddy `rate_limit`, nginx
-  `limit_req_zone`) in front of `:4040` with the same paths and thresholds.
+  `limit_req_zone`) in front of the app's port with the same paths and
+  thresholds.
 - **Cloudflare**: WAF → Rate limiting rules on the same paths.
 
 Do not "fix" this with a shared Redis store unless horizontal scale actually

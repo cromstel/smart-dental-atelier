@@ -1,4 +1,5 @@
 import { PRIVATE_ROUTE_PREFIXES } from '@/lib/seo';
+import { SITE } from '@/lib/content';
 
 /**
  * GET /robots.txt
@@ -10,7 +11,7 @@ export default function Robots() {
 }
 
 export async function getServerSideProps({ res }) {
-  const base = (process.env.NEXT_PUBLIC_SITE_URL || 'https://smart-dentalatelier.cromstelit.com').replace(/\/$/, '');
+  const base = SITE.url.replace(/\/$/, '');
 
   const body = `User-agent: *
 Allow: /

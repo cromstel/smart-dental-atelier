@@ -9,7 +9,17 @@ import { gallerySchema } from '@/lib/validation';
 import { audit } from '@/lib/audit';
 import { parsePagination } from '@/lib/guards';
 
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
+/**
+ * Where the transcoded images land.
+ *
+ * `GALLERY_STORAGE_DIR` is relative to the project root, so the default is
+ * `public/uploads` — the directory Next serves statically. Point it elsewhere
+ * (a mounted volume, an object-storage sync directory) without touching code.
+ */
+const UPLOAD_DIR = path.resolve(
+  process.cwd(),
+  process.env.GALLERY_STORAGE_DIR || path.join('public', 'uploads'),
+);
 const MAX_FILE_BYTES = 6 * 1024 * 1024;
 const ALLOWED = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif']);
 
@@ -26,7 +36,10 @@ const WEBP_QUALITY = 82;
 const WEBP_EFFORT = 6;
 
 /** Where formidable stages the raw upload before it is transcoded. */
-const TEMP_DIR = path.join(process.cwd(), '.tmp-uploads');
+const TEMP_DIR = path.resolve(
+  process.cwd(),
+  process.env.GALLERY_TEMP_DIR || '.tmp-uploads',
+);
 
 /**
  * /api/admin/gallery
@@ -125,7 +138,7 @@ export default apiHandler(async (req, res) => {
     // The name is fixed up front so validation can run against the final URL
     // before anything is written: a rejected form must not leave a file behind.
     const name = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}.webp`;
-    const url = `/uploads/${name}`;
+    const url = `${process.env.GALLERY_URL_PREFIX || '/uploads'}/${name}`;
 
     try {
       const file = Array.isArray(parsed.files.file) ? parsed.files.file[0] : parsed.files.file;

@@ -150,7 +150,7 @@ export default function CredentialsSignIn({ variant = 'client', children }) {
         <Link href="/" aria-label="Dental Atelier home" className="inline-block">
           <Image
             src="/images/logo-white.webp"
-            alt="Dental Atelier"
+            alt={SITE.name}
             width={225}
             height={65}
             className="h-10 w-auto md:h-14"
