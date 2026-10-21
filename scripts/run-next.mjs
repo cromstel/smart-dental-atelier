@@ -62,6 +62,13 @@ const port = configuredPort();
 const args = [command];
 if (port) args.push('--port', port);
 
+// `HOST` decides the bind address. Next.js already listens on every
+// interface by default, so it is only passed when it is set explicitly —
+// e.g. `HOST=0.0.0.0` to make the app reachable from other devices on the
+// local network.
+const host = process.env.HOST || readEnvFile('.env.local', 'HOST') || readEnvFile('.env', 'HOST');
+if (host) args.push('--hostname', host);
+
 const nextBin = path.join(
   projectRoot,
   'node_modules',
@@ -69,7 +76,10 @@ const nextBin = path.join(
   process.platform === 'win32' ? 'next.cmd' : 'next',
 );
 
-console.log(`[run-next] ${command}${port ? ` on port ${port}` : ' (default port)'}`);
+console.log(
+  `[run-next] ${command}${port ? ` on port ${port}` : ' (default port)'}` +
+    `${host ? ` on ${host}` : ''}`,
+);
 
 const child = spawn(nextBin, args, {
   cwd: projectRoot,

@@ -22,6 +22,7 @@
     "db:reset": "prisma migrate reset --force && tsx prisma/seed.mjs",
     "db:studio": "prisma studio",
     "create-admin": "tsx scripts/create-admin.mjs",
+    "mail:check": "node scripts/mail-check.mjs",
     "images:optimize": "tsx scripts/optimize-images.mjs",
     "predev": "npm run images:optimize",
     "prebuild": "npm run images:optimize"

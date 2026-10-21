@@ -119,6 +119,34 @@ both**, which is why the E2E suite must not have `.env` exported into the
 process: it points at the remote database, and the app then answers
 `503 pool timeout` while the same code reports `database: ok` without it.
 
+### Testing on the local network
+
+`HOST=0.0.0.0` makes the server listen on every interface, so a phone or a
+second laptop on the same Wi-Fi can open `http://<your-machine-ip>:4040`.
+`ALLOWED_ORIGINS` already lists `127.0.0.1` and `0.0.0.0`; a bare host in
+that list matches **every port** on it, so the list does not have to repeat
+the port the app happens to run on.
+
+One thing to know before you test from another device: NextAuth binds its
+CSRF cookie to `NEXTAUTH_URL`'s host. If that says `localhost` and you browse
+via `192.168.x.x`, the sign-in is rejected with a CSRF mismatch. Point
+`NEXTAUTH_URL` (and `NEXT_PUBLIC_SITE_URL`, for the canonical links) at the
+address the other devices use while testing, and restore them afterwards.
+
+### Mail
+
+`npm run mail:check` walks the SMTP conversation and reports the last stage
+that worked, so "the mail is not arriving" becomes one of four concrete
+causes: the host is unreachable (firewall / egress policy), the port is wrong
+(587 = STARTTLS, 465 = implicit TLS), the credentials are wrong (Gmail wants
+an *app* password), or the sender is not allowed to send for that account.
+It stops after the recipient is accepted, so it never sends a message.
+
+The mailer speaks the protocol in order — it waits for each reply, and the
+message body is only written after the server accepts `DATA`. That is what
+`tests/api/mailer.test.js` pins: a local server records the order it was
+talked to in and asserts the body arrives intact.
+
 ### Scripts
 
 The listen port is set in **one** place: `PORT` in `.env`. The `dev` and
