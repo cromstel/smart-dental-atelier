@@ -1,7 +1,8 @@
 import { prisma, isDatabaseConfigured } from '@/lib/prisma';
-import { apiHandler, methodNotAllowed, requireAdmin, HttpError } from '@/lib/api';
+import { apiHandler, methodNotAllowed, requireAdmin, HttpError, escapeLike } from '@/lib/api';
 import { audit } from '@/lib/audit';
 import { parsePagination } from '@/lib/guards';
+import { messageStatusSchema } from '@/lib/validation';
 
 /** /api/admin/messages — the shared inbox for every public form. */
 export default apiHandler(async (req, res) => {
@@ -16,7 +17,8 @@ export default apiHandler(async (req, res) => {
     if (req.query.status) where.status = String(req.query.status).toUpperCase();
     if (req.query.source) where.source = String(req.query.source).toUpperCase();
     if (req.query.q) {
-      const needle = String(req.query.q).trim();
+      // Escaped: `%` and `_` are LIKE wildcards.
+      const needle = escapeLike(String(req.query.q).trim());
       where.OR = [
         { firstName: { contains: needle } },
         { lastName: { contains: needle } },
@@ -47,20 +49,18 @@ export default apiHandler(async (req, res) => {
   }
 
   if (req.method === 'PATCH') {
-    const { id, status, repliedAt } = req.body || {};
-    if (!id) throw new HttpError(422, 'A message id is required.');
-
-    const allowed = ['NEW', 'READ', 'ANSWERED', 'SPAM'];
-    if (status && !allowed.includes(status)) throw new HttpError(422, 'Unknown status.');
+    // The id and the date are validated: `Number('abc')` and
+    // `new Date('nonsense')` used to reach the driver and answer 500.
+    const { id, status, repliedAt } = messageStatusSchema.parse(req.body ?? {});
 
     const data = {};
-    if (status) data.status = status;
-    if (repliedAt !== undefined) data.repliedAt = repliedAt ? new Date(repliedAt) : null;
+    if (status !== undefined) data.status = status;
+    if (repliedAt !== undefined) data.repliedAt = repliedAt;
     // Marking as answered implies a reply was sent.
-    if (status === 'ANSWERED' && !('repliedAt' in (req.body || {}))) data.repliedAt = new Date();
+    if (status === 'ANSWERED' && repliedAt === undefined) data.repliedAt = new Date();
     if (Object.keys(data).length === 0) throw new HttpError(422, 'Nothing to update.');
 
-    const message = await prisma.contactMessage.update({ where: { id: Number(id) }, data });
+    const message = await prisma.contactMessage.update({ where: { id }, data });
 
     await audit({ userId: guard.user.id, action: 'update', entity: 'ContactMessage', entityId: id, payload: data });
 

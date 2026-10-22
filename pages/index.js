@@ -9,9 +9,9 @@ import TestimonialsSlider from '@/components/marketing/TestimonialsSlider';
 import ImageGallery from '@/components/marketing/ImageGallery';
 import CtaBanner from '@/components/marketing/CtaBanner';
 import { FEATURE_SECTIONS, SITE } from '@/lib/content';
-import { getHomeData, getGallery } from '@/lib/cms';
+import { getGallery, getHomeData, getSettings } from '@/lib/cms';
 import { serializeDates } from '@/lib/serialize';
-import { organisationJsonLd } from '@/lib/seo';
+import { organisationJsonLd, jsonLdScript } from '@/lib/seo';
 
 /**
  * Home page.
@@ -20,22 +20,22 @@ import { organisationJsonLd } from '@/lib/seo';
  * intro panel, and the testimonial carousel — plus SEO/OG tags and real alt
  * text that the original had none of.
  */
-export default function HomePage({ testimonials = [], gallery = [] }) {
+export default function HomePage({ testimonials = [], gallery = [], settings = SITE }) {
   const smileGallery = gallery.filter((image) => image.category === 'smile').slice(0, 6);
 
   return (
-    <Layout>
+    <Layout contact={settings}>
       <Seo
         title="A state-of-the-art laboratory"
         description="Dental Atelier is a state-of-the-art dental laboratory in Brussels. Ceramics, veneers, crowns and bridges designed from facial analysis and digital smile design."
         pathname="/"
         image="/images/hero-sexy.webp"
-        jsonLd={organisationJsonLd(SITE)}
+        jsonLd={organisationJsonLd(settings)}
       >
         <meta property="og:locale" content="en_GB" />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organisationJsonLd(SITE)) }}
+          dangerouslySetInnerHTML={jsonLdScript(organisationJsonLd(settings))}
         />
       </Seo>
 
@@ -199,5 +199,6 @@ export default function HomePage({ testimonials = [], gallery = [] }) {
  */
 export async function getStaticProps() {
   const [{ testimonials }, gallery] = await Promise.all([getHomeData(), getGallery()]);
-  return { props: serializeDates({ testimonials, gallery }), revalidate: 300 };
+  const settings = await getSettings();
+  return { props: serializeDates({ testimonials, gallery, settings }), revalidate: 300 };
 }

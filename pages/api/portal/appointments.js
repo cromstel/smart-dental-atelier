@@ -1,5 +1,6 @@
 import { prisma, isDatabaseConfigured } from '@/lib/prisma';
 import { apiHandler, methodNotAllowed, requireUser, HttpError } from '@/lib/api';
+import { parsePagination } from '@/lib/guards';
 
 /**
  * /api/portal/appointments
@@ -17,9 +18,15 @@ export default apiHandler(async (req, res) => {
   const userId = guard.user.id;
 
   if (req.method === 'GET') {
+    // Capped: a client with a long history would otherwise pull every row
+    // in one response.
+    const { page, pageSize, skip, take } = parsePagination(req.query, { defaultSize: 25, maxSize: 100 });
+
     const appointments = await prisma.appointment.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
+      skip,
+      take,
       select: {
         id: true,
         type: true,
@@ -32,7 +39,7 @@ export default apiHandler(async (req, res) => {
       },
     });
 
-    return res.status(200).json({ appointments });
+    return res.status(200).json({ appointments, page, pageSize });
   }
 
   if (req.method === 'PATCH') {

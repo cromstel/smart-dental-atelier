@@ -1,5 +1,6 @@
 import { PUBLIC_ROUTES } from '@/lib/seo';
 import { getPageSeo } from '@/lib/cms';
+import { SITE } from '@/lib/content';
 
 /**
  * GET /sitemap.xml — generated from the public route list plus every published
@@ -12,7 +13,7 @@ export default function Sitemap() {
 
 export async function getServerSideProps({ res }) {
   const settings = await getPageSeo('/');
-  const base = (settings.site?.url || process.env.NEXT_PUBLIC_SITE_URL || 'https://smart-dentalatelier.cromstelit.com').replace(
+  const base = (settings.site?.url || SITE.url).replace(
     /\/$/,
     '',
   );

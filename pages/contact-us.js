@@ -28,12 +28,12 @@ export default function ContactPage({ settings = SITE }) {
   const vat = settings.vat || SITE.vat;
   const addressLines = settings.address?.lines || SITE.address.lines;
   return (
-    <Layout>
+    <Layout contact={settings}>
       <Seo
         title="Contact Us"
-        description="Contact Dental Atelier Michal Siakel: Rue du Bourdon 100/8, 1180 Uccle, Brussels. Mobile +32 478 54 74 75, phone +32 2 376 43 26."
+        description={`Contact ${SITE.legalName}: ${(settings.address?.lines || SITE.address.lines).slice(0, 3).join(', ')}. Mobile ${settings.mobileDisplay || settings.mobile || SITE.mobileDisplay}, phone ${settings.phoneDisplay || settings.phone || SITE.phoneDisplay}.`}
         pathname="/contact-us"
-        jsonLd={organisationJsonLd(SITE)}
+        jsonLd={organisationJsonLd(settings)}
       />
 
       <PageHeader

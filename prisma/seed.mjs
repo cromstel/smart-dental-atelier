@@ -64,17 +64,48 @@ async function upsertEmpty(model, where, create, patch) {
   return prisma[model].update({ where: { id: existing.id }, data: emptyPatch });
 }
 
+/**
+ * Recognises the placeholder values that ship in `.env.example`.
+ *
+ * They are there to show the shape of a secret, not to be used: a value like
+ * `CHANGE_ME` that reaches the database is a working login whose password is
+ * published in the repository.
+ */
+function isPlaceholderSecret(value) {
+  const normalised = String(value).trim().toLowerCase();
+  return (
+    normalised.includes('change_me') ||
+    normalised.includes('changeme') ||
+    normalised === 'password' ||
+    normalised === 'secret'
+  );
+}
+
 async function main() {
-  console.log('Seeding Dental Atelier…');
+  console.log(`Seeding ${process.env.APP_NAME || 'the site'}…`);
 
   // ---------------------------------------------------------------- Admin
-  const adminEmail = (process.env.ADMIN_EMAIL || 'admin@smart-dentalatelier.cromstelit.com').toLowerCase();
+  // Both values come from the environment: seeding an account under a
+  // hardcoded address would create a login nobody knows the password for.
+  const adminEmail = (process.env.ADMIN_EMAIL || '').toLowerCase();
   const adminPassword = process.env.ADMIN_PASSWORD;
 
-  if (!adminPassword) {
+  if (!adminEmail) {
+    console.warn(
+      'ADMIN_EMAIL is not set — skipping the admin account.\n' +
+        '         Set it in .env, or create one later with: npm run create-admin',
+    );
+  } else if (!adminPassword) {
     console.warn(
       'ADMIN_PASSWORD is not set — skipping the admin account.\n' +
         '         Create one later with: npm run create-admin',
+    );
+  } else if (isPlaceholderSecret(adminPassword)) {
+    // A placeholder that reaches the database becomes a working login with a
+    // password that is published in this repository. Refuse it.
+    throw new Error(
+      'ADMIN_PASSWORD still holds a placeholder value.\n' +
+        '         Generate a real one (openssl rand -base64 16) and set it in .env.',
     );
   } else {
     const password = await bcrypt.hash(adminPassword, 12);

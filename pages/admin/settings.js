@@ -7,7 +7,7 @@ import FormTextArea from '@/components/ui/FormTextArea';
 import Alert from '@/components/ui/Alert';
 import { requireAdminPage } from '@/lib/guards';
 import { prisma, isDatabaseConfigured } from '@/lib/prisma';
-import { SETTINGS } from '@/lib/content';
+import { SETTINGS, ENV_OWNED_SETTINGS } from '@/lib/content';
 
 const GROUPS = [
   { id: 'general', title: 'General', blurb: 'Site name, tagline and the description used as the default meta description.' },
@@ -29,6 +29,10 @@ const FIELD_OVERRIDES = {
  * Writes go to `/api/admin/settings`, which only accepts keys that already
  * exist in the `SETTINGS` registry in `lib/content.js` — an admin cannot
  * invent new config keys through the API.
+ *
+ * The deployment's own values (name, legal name, canonical URL, contact
+ * address) are shown read-only: they come from the environment, so the
+ * environment always wins and the screen cannot disagree with it.
  */
 export default function AdminSettingsPage({ settings = [] }) {
   const router = useRouter();
@@ -38,7 +42,11 @@ export default function AdminSettingsPage({ settings = [] }) {
   const [status, setStatus] = useState('idle');
   const [message, setMessage] = useState('');
 
-  const dirty = SETTINGS.filter((setting) => (values[setting.key] ?? '') !== (setting.value ?? ''));
+  const dirty = SETTINGS.filter(
+    (setting) =>
+      !ENV_OWNED_SETTINGS.has(setting.key) &&
+      (values[setting.key] ?? '') !== (setting.value ?? ''),
+  );
 
   const setValue = (key, value) => {
     setValues((current) => ({ ...current, [key]: value }));
@@ -55,10 +63,13 @@ export default function AdminSettingsPage({ settings = [] }) {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          settings: SETTINGS.map((setting) => ({
-            key: setting.key,
-            value: values[setting.key] ?? '',
-          })),
+          // The environment owns these; sending them would be rejected.
+          settings: SETTINGS.filter((setting) => !ENV_OWNED_SETTINGS.has(setting.key)).map(
+            (setting) => ({
+              key: setting.key,
+              value: values[setting.key] ?? '',
+            }),
+          ),
         }),
       });
       const data = await response.json();
@@ -117,20 +128,30 @@ export default function AdminSettingsPage({ settings = [] }) {
                     const value = values[setting.key] ?? '';
                     const changed = value !== (setting.value ?? '');
 
+                    // Deployment-owned values are not editable here: they come
+                    // from the environment, and the environment always wins.
+                    const envOwned = ENV_OWNED_SETTINGS.has(setting.key);
+
                     const common = {
                       key: setting.key,
                       label: setting.key,
                       name: setting.key,
                       required: true,
-                      hint: override.hint,
+                      hint: envOwned ? 'Set by the environment — edit it in .env and restart.' : override.hint,
                       value,
+                      readOnly: envOwned,
+                      disabled: envOwned,
                       onChange: (event) => setValue(setting.key, event.target.value),
                     };
 
                     return (
                       <div key={setting.key} className={override.type === 'textarea' ? 'sm:col-span-2' : ''}>
                         <div className="mb-1 flex items-center gap-2">
-                          {changed ? (
+                          {envOwned ? (
+                            <span className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-2xs uppercase tracking-caps text-silver-400">
+                              from environment
+                            </span>
+                          ) : changed ? (
                             <span className="rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-2xs uppercase tracking-caps text-warning">
                               edited
                             </span>

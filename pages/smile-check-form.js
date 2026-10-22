@@ -4,7 +4,7 @@ import Seo from '@/components/Seo';
 import Section from '@/components/ui/Section';
 import { PageHeader } from '@/components/marketing/HeroSection';
 import SmileCheckForm from '@/components/forms/SmileCheckForm';
-import { getSmileCheckQuestions } from '@/lib/cms';
+import { getSettings, getSmileCheckQuestions } from '@/lib/cms';
 import { serializeDates } from '@/lib/serialize';
 import { breadcrumbJsonLd } from '@/lib/seo';
 
@@ -13,9 +13,9 @@ const BREADCRUMBS = [
   { label: 'Smile check form' },
 ];
 
-export default function SmileCheckFormPage({ questions = [] }) {
+export default function SmileCheckFormPage({ questions = [], settings = SITE }) {
   return (
-    <Layout>
+    <Layout contact={settings}>
       <Seo
         title="Smile check form"
         description="Answer eleven short questions about your teeth and find out what bothers you about your smile — then request a free consultation."
@@ -83,5 +83,6 @@ export default function SmileCheckFormPage({ questions = [] }) {
 
 export async function getStaticProps() {
   const questions = await getSmileCheckQuestions();
-  return { props: serializeDates({ questions }), revalidate: 600 };
+  const settings = await getSettings();
+  return { props: serializeDates({ questions, settings }), revalidate: 600 };
 }

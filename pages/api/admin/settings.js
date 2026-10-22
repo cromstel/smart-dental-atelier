@@ -2,7 +2,7 @@ import { prisma, isDatabaseConfigured } from '@/lib/prisma';
 import { apiHandler, methodNotAllowed, requireAdmin, HttpError } from '@/lib/api';
 import { settingSchema } from '@/lib/validation';
 import { audit } from '@/lib/audit';
-import { SETTINGS } from '@/lib/content';
+import { SETTINGS, ENV_OWNED_SETTINGS } from '@/lib/content';
 
 /**
  * /api/admin/settings
@@ -11,6 +11,10 @@ import { SETTINGS } from '@/lib/content';
  *
  * Only keys that already exist in the registry can be written, so an admin
  * cannot inject arbitrary config keys through this endpoint.
+ *
+ * The deployment's own values — the name, the legal name, the canonical URL
+ * and the contact address — are refused: they belong to the environment, and
+ * a stored row from an earlier deployment would otherwise override them.
  */
 const KNOWN_KEYS = new Set(SETTINGS.map((setting) => setting.key));
 
@@ -33,6 +37,12 @@ export default apiHandler(async (req, res) => {
         const parsed = settingSchema.parse(entry);
         if (!KNOWN_KEYS.has(parsed.key)) {
           throw new HttpError(422, `Unknown setting key: ${parsed.key}`);
+        }
+        if (ENV_OWNED_SETTINGS.has(parsed.key)) {
+          throw new HttpError(
+            422,
+            `${parsed.key} comes from the environment (APP_NAME, NEXT_PUBLIC_SITE_URL, CONTACT_EMAIL) and cannot be edited here.`,
+          );
         }
         return { ...parsed, group: SETTINGS.find((s) => s.key === parsed.key)?.group || parsed.group };
       });

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import FAQItem from './FAQItem';
+import { jsonLdScript } from '@/lib/seo';
 
 /**
  * FAQ list with an optional live filter.
@@ -116,7 +117,7 @@ export default function FAQAccordion({
       {faqs.length > 0 ? (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+          dangerouslySetInnerHTML={jsonLdScript(faqJsonLd)}
         />
       ) : null}
     </div>

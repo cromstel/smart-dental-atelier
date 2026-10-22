@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/marketing/HeroSection';
 import SectionHeading from '@/components/marketing/SectionHeading';
 import TestimonialCard from '@/components/marketing/TestimonialCard';
 import CtaBanner from '@/components/marketing/CtaBanner';
-import { getTestimonials } from '@/lib/cms';
+import { getSettings, getTestimonials } from '@/lib/cms';
 import { serializeDates } from '@/lib/serialize';
 import { breadcrumbJsonLd } from '@/lib/seo';
 
@@ -15,9 +15,9 @@ const BREADCRUMBS = [
   { label: 'Testimonials' },
 ];
 
-export default function TestimonialsPage({ testimonials = [] }) {
+export default function TestimonialsPage({ testimonials = [], settings = SITE }) {
   return (
-    <Layout>
+    <Layout contact={settings}>
       <Seo
         title="Testimonials"
         description="Unedited feedback from patients of Dental Atelier about crowns, veneers, implant bridges and full smile makeovers."
@@ -78,5 +78,6 @@ export default function TestimonialsPage({ testimonials = [] }) {
 
 export async function getStaticProps() {
   const testimonials = await getTestimonials();
-  return { props: serializeDates({ testimonials }), revalidate: 300 };
+  const settings = await getSettings();
+  return { props: serializeDates({ testimonials, settings }), revalidate: 300 };
 }

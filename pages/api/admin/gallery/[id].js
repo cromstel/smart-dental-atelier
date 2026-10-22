@@ -42,9 +42,13 @@ export default apiHandler(async (req, res) => {
 
     // Only remove the file when we uploaded it (never touch the bundled set).
     if (existing.url.startsWith('/uploads/')) {
-      const target = path.join(process.cwd(), 'public', existing.url.replace(/^\//, ''));
-      // Guard against path traversal via a crafted url.
-      if (target.startsWith(path.join(process.cwd(), 'public', 'uploads'))) {
+      // The comparison is on the *resolved* path, and the prefix has to end at
+      // a separator: a plain `startsWith` would also accept
+      // `public/uploads-evil`, which is outside the upload directory.
+      const uploadsRoot = path.resolve(process.cwd(), 'public', 'uploads');
+      const target = path.resolve(process.cwd(), 'public', existing.url.replace(/^\//, ''));
+
+      if (target === uploadsRoot || target.startsWith(uploadsRoot + path.sep)) {
         await fs.rm(target, { force: true }).catch(() => {});
       }
     }

@@ -1,6 +1,8 @@
 import Navbar from './Navbar';
 import Footer from './Footer';
+import ScrollToTop from './ScrollToTop';
 import { SITE } from '@/lib/content';
+import { telHref } from '@/lib/format';
 
 /**
  * Public site chrome. Every marketing page renders inside this layout, which
@@ -9,26 +11,33 @@ import { SITE } from '@/lib/content';
  *
  * `main` gets `id="main"` so the skip link has a real target.
  */
-export default function Layout({ children, navbarVariant = 'light', className = '' }) {
+export default function Layout({
+  children,
+  navbarVariant = 'light',
+  className = '',
+  hideNavbar = false,
+  hideFooter = false,
+  contact,
+}) {
   return (
     <div className="flex min-h-screen flex-col">
       <a href="#main" className="skip-link">
         Skip to main content
       </a>
 
-      <Navbar variant={navbarVariant} />
+      {!hideNavbar && <Navbar variant={navbarVariant} contact={contact} />}
 
       <main id="main" tabIndex={-1} className={`flex-1 focus:outline-none ${className}`}>
         {children}
       </main>
 
-      <Footer />
+      {!hideFooter && <Footer contact={contact} />}
 
       <noscript>
         <div className="border-t border-brand-400/30 bg-ink-800 p-4 text-center text-sm text-silver-300">
           JavaScript is only required for the interactive forms. You can still reach us on{' '}
-          <a className="link-underline" href={`tel:${SITE.phone.replace(/[^\d+]/g, '')}`}>
-            {SITE.phoneDisplay}
+          <a className="link-underline" href={telHref(contact?.phone || SITE.phone)}>
+            {contact?.phoneDisplay || contact?.phone || SITE.phoneDisplay}
           </a>{' '}
           or by email at{' '}
           <a className="link-underline" href={`mailto:${SITE.email}`}>
@@ -37,6 +46,8 @@ export default function Layout({ children, navbarVariant = 'light', className = 
           .
         </div>
       </noscript>
+
+      <ScrollToTop />
     </div>
   );
 }

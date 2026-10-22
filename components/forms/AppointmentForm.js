@@ -26,6 +26,8 @@ export default function AppointmentForm({
   title = 'Request an appointment',
   description,
   className = '',
+  timeZone = '',
+  durationMinutes = 0,
 }) {
   const { data: session, status: sessionStatus } = useSession();
 
@@ -178,12 +180,24 @@ export default function AppointmentForm({
             type="date"
             required
             min={toDateInputValue()}
-            hint="Pick a day you are available; we will agree the exact slot with you."
+            hint={
+              timeZone
+                ? `Pick a day you are available (${timeZone} time); we will agree the exact slot with you.`
+                : 'Pick a day you are available; we will agree the exact slot with you.'
+            }
             value={form.values.preferredDate}
             onChange={form.handleChange}
             error={form.errors.preferredDate}
           />
         </div>
+
+        {durationMinutes > 0 ? (
+          <div className="sm:col-span-2">
+            <p className="text-xs text-silver-500">
+              Each appointment is scheduled in {durationMinutes}-minute slots.
+            </p>
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-5">

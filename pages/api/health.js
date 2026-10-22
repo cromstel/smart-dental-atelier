@@ -1,11 +1,17 @@
 import { prisma, isDatabaseConfigured } from '@/lib/prisma';
-import { apiHandler } from '@/lib/api';
+import { apiHandler, methodNotAllowed } from '@/lib/api';
 
 /**
  * GET /api/health — uptime probe for the platform (UptimeRobot, Hostinger, …).
  * Returns 503 when the database cannot be reached so the probe actually fails.
+ *
+ * The failure detail is only included when `DEBUG_MODE` is on. The driver
+ * message names the error code and the pool configuration, which is more than
+ * an anonymous caller needs to know about the deployment.
  */
 export default apiHandler(async (req, res) => {
+  if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
+
   const startedAt = Date.now();
 
   let database = 'skipped';
@@ -14,12 +20,13 @@ export default apiHandler(async (req, res) => {
       await prisma.$queryRaw`SELECT 1`;
       database = 'ok';
     } catch (error) {
-      return res.status(503).json({
+      const body = {
         status: 'degraded',
         database: 'error',
-        detail: error.message,
         uptime: Math.round(process.uptime()),
-      });
+      };
+      if (process.env.DEBUG_MODE === 'true') body.detail = error.message;
+      return res.status(503).json(body);
     }
   }
 

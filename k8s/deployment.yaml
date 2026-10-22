@@ -1,8 +1,15 @@
-# Kubernetes manifests for Dental Atelier.
+# Kubernetes manifests.
+#
+# The application name and the listen port are NOT written here — they are
+# substituted from the environment, so one set of manifests serves any
+# deployment:
 #
 #   1. cp k8s/secret.example.yaml k8s/secret.yaml   # fill in, never commit
-#   2. edit the ingress host below
-#   3. kubectl apply -f k8s/
+#   2. export APP_NAME=... PORT=... SITE_URL=... INGRESS_HOST=...
+#   3. envsubst < k8s/deployment.yaml | kubectl apply -f -
+#
+# `${APP_NAME}` and `${PORT}` are expanded by `envsubst`; the values come from
+# the same `.env` the app itself reads.
 #
 # The database is expected to be managed externally (PlanetScale / RDS / your
 # own MySQL); it is deliberately not defined here.
@@ -10,34 +17,44 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: dental-atelier
+  name: ${APP_NAME}
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: dental-atelier-config
-  namespace: dental-atelier
+  name: ${APP_NAME}-config
+  namespace: ${APP_NAME}
 data:
-  NEXTAUTH_URL: 'https://smart-dentalatelier.cromstelit.com'
-  NEXT_PUBLIC_SITE_URL: 'https://smart-dentalatelier.cromstelit.com'
+  APP_NAME: '${APP_NAME}'
+  NEXT_PUBLIC_APP_NAME: '${APP_NAME}'
+  NEXTAUTH_URL: '${SITE_URL}'
+  NEXT_PUBLIC_SITE_URL: '${SITE_URL}'
   NODE_ENV: 'production'
-  PORT: '3005'
+  # The listen port. Substituted from the environment, like every other value.
+  PORT: '${PORT}'
+  DEBUG_MODE: 'false'
   # Extra origins allowed to POST to the public forms, comma separated.
   # Empty means same-origin only.
   ALLOWED_ORIGINS: ''
+  # Mail transport. The credentials live in the Secret, not here.
+  SMTP_PROVIDER: ''
   SMTP_HOST: ''
-  SMTP_PORT: '587'
-  SMTP_USER: ''
-  SMTP_PASSWORD: ''
-  NOTIFY_EMAIL: 'admin@smart-dentalatelier.cromstelit.com'
+  SMTP_PORT: ''
+  SMTP_FROM: ''
+  NOTIFY_EMAIL: ''
+  # Where the transcoded gallery images are written.
+  GALLERY_STORAGE_DIR: 'public/uploads'
+  # The studio's schedule.
+  APPOINTMENT_TIME_ZONE: ''
+  APPOINTMENT_DURATION_MINUTES: ''
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: dental-atelier
-  namespace: dental-atelier
+  name: ${APP_NAME}
+  namespace: ${APP_NAME}
   labels:
-    app.kubernetes.io/name: dental-atelier
+    app.kubernetes.io/name: ${APP_NAME}
     app.kubernetes.io/component: web
 spec:
   replicas: 2
@@ -48,11 +65,11 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app.kubernetes.io/name: dental-atelier
+      app.kubernetes.io/name: ${APP_NAME}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: dental-atelier
+        app.kubernetes.io/name: ${APP_NAME}
     spec:
       securityContext:
         runAsNonRoot: true
@@ -60,17 +77,18 @@ spec:
           type: RuntimeDefault
       containers:
         - name: web
-          image: ghcr.io/your-org/dental-atelier:latest
+          image: ghcr.io/your-org/${APP_NAME}:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
-              containerPort: 3005
+              containerPort: ${PORT}
           envFrom:
             - configMapRef:
-                name: dental-atelier-config
-            # DATABASE_URL, NEXTAUTH_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD
+                name: ${APP_NAME}-config
+            # DATABASE_URL, NEXTAUTH_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD,
+            # SMTP_USER, SMTP_PASSWORD, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
             - secretRef:
-                name: dental-atelier-secrets
+                name: ${APP_NAME}-secrets
           # Prisma needs a writable tmp for its engine extraction.
           volumeMounts:
             - name: tmp
@@ -111,17 +129,17 @@ spec:
           emptyDir: {}
         - name: uploads
           persistentVolumeClaim:
-            claimName: dental-atelier-uploads
+            claimName: ${APP_NAME}-uploads
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: dental-atelier
-  namespace: dental-atelier
+  name: ${APP_NAME}
+  namespace: ${APP_NAME}
 spec:
   type: ClusterIP
   selector:
-    app.kubernetes.io/name: dental-atelier
+    app.kubernetes.io/name: ${APP_NAME}
   ports:
     - name: http
       port: 80
@@ -131,8 +149,8 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: dental-atelier
-  namespace: dental-atelier
+  name: ${APP_NAME}
+  namespace: ${APP_NAME}
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/proxy-body-size: '8m'
@@ -140,25 +158,25 @@ metadata:
 spec:
   ingressClassName: nginx
   tls:
-    - hosts: ['www.dentalatelier.co']
-      secretName: dental-atelier-tls
+    - hosts: ['${INGRESS_HOST}']
+      secretName: ${APP_NAME}-tls
   rules:
-    - host: www.dentalatelier.co
+    - host: ${INGRESS_HOST}
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: dental-atelier
+                name: ${APP_NAME}
                 port:
                   name: http
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: dental-atelier-uploads
-  namespace: dental-atelier
+  name: ${APP_NAME}-uploads
+  namespace: ${APP_NAME}
 spec:
   accessModes:
     - ReadWriteMany
@@ -171,13 +189,13 @@ spec:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: dental-atelier
-  namespace: dental-atelier
+  name: ${APP_NAME}
+  namespace: ${APP_NAME}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: dental-atelier
+    name: ${APP_NAME}
   minReplicas: 2
   maxReplicas: 6
   metrics:

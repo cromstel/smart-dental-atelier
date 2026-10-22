@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
 import { getSession, signIn } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import FormInput from '@/components/ui/FormInput';
@@ -6,6 +8,7 @@ import PrimaryButton from '@/components/ui/PrimaryButton';
 import Alert from '@/components/ui/Alert';
 import { SITE } from '@/lib/content';
 import { AUTH_ROUTES, safeCallbackUrl, withCallback } from '@/lib/authRoutes';
+import { telHref } from '@/lib/format';
 
 /**
  * The credentials form, shared by `/auth/login` (clients) and
@@ -49,7 +52,7 @@ const VARIANTS = {
  *   `variant` decides where a successful sign-in may go; `children` is rendered
  *   under the sign-in panel for page-specific notes.
  */
-export default function CredentialsSignIn({ variant = 'client', children }) {
+export default function CredentialsSignIn({ variant = 'client', children, contact }) {
   const config = VARIANTS[variant] || VARIANTS.client;
   const router = useRouter();
 
@@ -143,6 +146,20 @@ export default function CredentialsSignIn({ variant = 'client', children }) {
 
   return (
     <>
+      {/* App logo — same on both auth variants */}
+      <div className="flex justify-center py-8 md:py-12">
+        <Link href="/" aria-label="Dental Atelier home" className="inline-block">
+          <Image
+            src="/images/logo-white.webp"
+            alt={SITE.name}
+            width={225}
+            height={65}
+            className="h-10 w-auto md:h-14"
+            priority
+          />
+        </Link>
+      </div>
+
       <div className="panel-gold">
         <h1 className="text-3xl">{config.heading}</h1>
         <p className="mt-3 text-sm text-silver-400">{config.intro}</p>
@@ -184,8 +201,8 @@ export default function CredentialsSignIn({ variant = 'client', children }) {
 
       <p className="mt-6 text-center text-xs text-silver-600">
         Lost your password? Call{' '}
-        <a href={`tel:${SITE.phone.replace(/[^\d+]/g, '')}`} className="link-underline">
-          {SITE.phoneDisplay}
+        <a href={telHref(contact?.phone || SITE.phone)} className="link-underline">
+          {contact?.phoneDisplay || contact?.phone || SITE.phoneDisplay}
         </a>{' '}
         and we will reset it.
       </p>

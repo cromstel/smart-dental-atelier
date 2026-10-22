@@ -8,10 +8,32 @@
  */
 
 /**
- * The app listens on 3005 (see the `dev` / `start` scripts in package.json).
- * Exported so the Playwright config cannot drift from it.
+ * The port the server listens on.
+ *
+ * The number lives in the env file, never in the code. Next.js chooses its
+ * port before the env files are loaded (its own documentation: "PORT cannot be
+ * set in `.env` as booting up the HTTP server happens before any other code is
+ * initialized"), so `scripts/run-next.mjs` reads it there and passes `--port`.
+ *
+ * The value is exported for the Playwright config, which cannot know about
+ * the flag. `process.env.PORT` is what the runtime actually binds to; the
+ * env-file lookup below is the same fallback the launcher uses.
  */
-const PORT = 3005;
+const PORT = Number(process.env.PORT || readEnvFile('PORT')) || 0;
+
+/** Minimal `.env` reader — the port only, and only when it is not set. */
+function readEnvFile(key) {
+  try {
+    const line = require('node:fs')
+      .readFileSync('.env.local', 'utf8')
+      .split(/\r?\n/)
+      .find((entry) => entry.trim().startsWith(`${key}=`));
+    if (!line) return null;
+    return line.slice(line.indexOf('=') + 1).trim().replace(/^["']|["']$/g, '');
+  } catch {
+    return null;
+  }
+}
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -122,16 +144,11 @@ const nextConfig = {
  * --webpack`. Zero-cost in every other configuration.
  */
 const withBundleAnalyzer = require('@next/bundle-analyzer')({ enabled: process.env.ANALYZE === 'true' });
-module.exports = withBundleAnalyzer(module.exports);
 
 /**
  * Next validates this object strictly and warns about unknown keys, so the
  * shared port is exposed on a symbol-ish extra property that the config schema
  * ignores, rather than as a sibling key.
  */
-Object.defineProperty(module.exports, 'PORT', {
-  value: PORT,
-  enumerable: false,
-});
-
-module.exports = nextConfig;
+const analyzedConfig = withBundleAnalyzer(nextConfig);
+module.exports = analyzedConfig;

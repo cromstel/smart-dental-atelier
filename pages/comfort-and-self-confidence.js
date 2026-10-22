@@ -9,6 +9,8 @@ import SectionHeading from '@/components/marketing/SectionHeading';
 import ImageGallery from '@/components/marketing/ImageGallery';
 import CtaBanner from '@/components/marketing/CtaBanner';
 import { breadcrumbJsonLd } from '@/lib/seo';
+import { getSettings } from '@/lib/cms';
+import { SITE } from '@/lib/content';
 
 const BREADCRUMBS = [
   { label: 'Home', href: '/' },
@@ -21,9 +23,9 @@ const GALLERY = [
   { url: '/images/smile-comfort-3.webp', altText: 'Fully ceramic bridge in the lower jaw', title: 'Ceramic bridge' },
 ];
 
-export default function ComfortAndSelfConfidencePage() {
+export default function ComfortAndSelfConfidencePage({ settings = SITE }) {
   return (
-    <Layout>
+    <Layout contact={settings}>
       <Seo
         title="Comfort & Self-confidence"
         description="Chipping, discoloured fillings, gaps and worn enamel hold people back from smiling. Ceramic inlays, veneers and crowns are the easy solution."
@@ -126,4 +128,9 @@ export default function ComfortAndSelfConfidencePage() {
       </Section>
     </Layout>
   );
+}
+
+export async function getStaticProps() {
+  const settings = await getSettings();
+  return { props: { settings }, revalidate: 600 };
 }

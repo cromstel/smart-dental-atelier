@@ -1,8 +1,8 @@
 # Dental Atelier
 
-A re-implementation of [dentalatelier.co](https://smart-dentalatelier.cromstelit.com) — a
-state-of-the-art dental laboratory in Uccle, Brussels — as a modern Next.js
-application with an **admin portal** and a **client portal**.
+A re-implementation of the **Dental Atelier** website — a state-of-the-art
+dental laboratory in Uccle, Brussels — as a modern Next.js application with an
+**admin portal** and a **client portal**.
 
 All copy is taken verbatim from the live site. The legacy Bootstrap/HTML build
 is replaced with React + Tailwind, Prisma + MySQL, and NextAuth.
@@ -66,7 +66,7 @@ cp .env.example .env
 npx prisma migrate deploy   # create the schema
 npm run db:seed             # load the copy, FAQs, testimonials, gallery + an admin
 
-npm run dev                 # http://localhost:3005
+npm run dev                 # http://localhost:$PORT  (PORT comes from .env)
 ```
 
 Sign in at `/auth/admin/login` with the `ADMIN_EMAIL` / `ADMIN_PASSWORD` from
@@ -81,19 +81,83 @@ docker compose exec app npx prisma migrate deploy
 docker compose exec app npm run db:seed
 ```
 
-The Compose stack brings up MySQL 8 and the app on `http://localhost:3005`, and
+The Compose stack brings up MySQL 8 and the app on the port from `PORT`, and
 keeps uploads in a named volume.
+
+### Configuration
+
+**Nothing that identifies or locates the app is hardcoded.** The port, the
+application name, the canonical URL, every secret and the whole SMTP setup
+come from the environment, so the same build can be deployed under a different
+name, on a different port, against a different mail provider.
+
+| Variable | Purpose |
+| --- | --- |
+| `APP_NAME` / `NEXT_PUBLIC_APP_NAME` | The name in the navbar, the admin shell, the e-mails and the Open Graph tags. The `NEXT_PUBLIC_` copy is the one the browser bundle sees — set both. |
+| `APP_LEGAL_NAME` | The legal entity, used in the JSON-LD organisation block. |
+| `PORT` | The port the server binds to. `npm run dev` / `npm run start` read it; the Dockerfile takes it as a runtime variable; Compose interpolates it; the Kubernetes manifests substitute it. |
+| `NEXTAUTH_URL` | The canonical origin. NextAuth's CSRF cookie is bound to it, and it must match the address visitors use. |
+| `NEXT_PUBLIC_SITE_URL` | Canonical URLs, sitemap, `robots.txt`, OG tags, links in notification e-mails. |
+| `NEXTAUTH_SECRET` | Signs the session JWT **and** peppers the newsletter unsubscribe tokens. `openssl rand -base64 32`. |
+| `DATABASE_URL` | MySQL connection string. Percent-encode the password: a literal `/` breaks URL parsing (`/` → `%2F`). |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | The account created by `npm run db:seed` and `npm run create-admin`. Both are required for the seed; there is no fallback address. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional. The OAuth provider is enabled only when both are set. |
+| `SMTP_PROVIDER` | Selects the default port for a known provider (`gmail`, `smtp`, `sendgrid`, `mailgun`, `local`). |
+| `SMTP_HOST` / `SMTP_PORT` | The mail server. `SMTP_PORT` falls back to the provider's default. |
+| `SMTP_USER` / `SMTP_PASSWORD` | The credentials. For Gmail this is an **app password**, not the account password. |
+| `SMTP_FROM` | The envelope sender; defaults to `SMTP_USER`. |
+| `NOTIFY_EMAIL` | Where inquiry and appointment notifications are delivered. |
+| `GALLERY_STORAGE_DIR` | Where the transcoded images are written, relative to the project root (default `public/uploads`). `GALLERY_TEMP_DIR` stages the raw upload, `GALLERY_URL_PREFIX` is the public path they are served under. |
+| `APPOINTMENT_TIME_ZONE` | The studio's timezone, shown on the booking form. |
+| `APPOINTMENT_DURATION_MINUTES` | The length of one appointment slot. |
+| `ALLOWED_ORIGINS` | Extra origins allowed to POST to the public forms. Empty means same-origin only. |
+| `DEBUG_MODE` | Adds the underlying error message to API responses. Leave off in production. |
+
+`.env.example` lists every one of them with a placeholder. `.env.local`
+overrides `.env` for local development — and **an exported variable beats
+both**, which is why the E2E suite must not have `.env` exported into the
+process: it points at the remote database, and the app then answers
+`503 pool timeout` while the same code reports `database: ok` without it.
+
+### Testing on the local network
+
+`HOST=0.0.0.0` makes the server listen on every interface, so a phone or a
+second laptop on the same Wi-Fi can open `http://<your-machine-ip>:4040`.
+`ALLOWED_ORIGINS` already lists `127.0.0.1` and `0.0.0.0`; a bare host in
+that list matches **every port** on it, so the list does not have to repeat
+the port the app happens to run on.
+
+One thing to know before you test from another device: NextAuth binds its
+CSRF cookie to `NEXTAUTH_URL`'s host. If that says `localhost` and you browse
+via `192.168.x.x`, the sign-in is rejected with a CSRF mismatch. Point
+`NEXTAUTH_URL` (and `NEXT_PUBLIC_SITE_URL`, for the canonical links) at the
+address the other devices use while testing, and restore them afterwards.
+
+### Mail
+
+`npm run mail:check` walks the SMTP conversation and reports the last stage
+that worked, so "the mail is not arriving" becomes one of four concrete
+causes: the host is unreachable (firewall / egress policy), the port is wrong
+(587 = STARTTLS, 465 = implicit TLS), the credentials are wrong (Gmail wants
+an *app* password), or the sender is not allowed to send for that account.
+It stops after the recipient is accepted, so it never sends a message.
+
+The mailer speaks the protocol in order — it waits for each reply, and the
+message body is only written after the server accepts `DATA`. That is what
+`tests/api/mailer.test.js` pins: a local server records the order it was
+talked to in and asserts the body arrives intact.
 
 ### Scripts
 
-The app listens on **port 3005** (chosen to avoid a clash with anything already
-on 3000). The port is set in three places that are kept in sync: the `dev` and
-`start` scripts, `PORT` in `next.config.js` — which Playwright imports — and
-`EXPOSE`/`ENV PORT` in the Dockerfile.
+The listen port is set in **one** place: `PORT` in `.env`. The `dev` and
+`start` scripts pass no `-p`, `next.config.js` reads `process.env.PORT`,
+Playwright reads the same value (falling back to `.env`), the Dockerfile takes
+it as a runtime variable, Compose interpolates it, and the Kubernetes manifests
+substitute it.
 
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Development server on :3005 with hot reload |
+| `npm run dev` | Development server on `$PORT` with hot reload |
 | `npm run build` | `prisma generate` + production build |
 | `npm start` | Serve the production build |
 | `npm run lint` | ESLint 9 flat config (`eslint.config.mjs`) |
@@ -589,7 +653,8 @@ dashboard change, not a code change:
   request-info|appointments|newsletter)` at the same thresholds as above.
   The in-app limiter stays as defence in depth.
 - **Self-hosted / Docker**: put a reverse proxy (Caddy `rate_limit`, nginx
-  `limit_req_zone`) in front of `:3005` with the same paths and thresholds.
+  `limit_req_zone`) in front of the app's port with the same paths and
+  thresholds.
 - **Cloudflare**: WAF → Rate limiting rules on the same paths.
 
 Do not "fix" this with a shared Redis store unless horizontal scale actually
@@ -734,16 +799,60 @@ specification, and why:
     console check catches it, which is what `tests/e2e/public.spec.js` now does.
 
     **Why there is no nonce-based CSP**, and why "Pages Router can't" is the
-    wrong reason: Pages Router *can* do nonces (set the CSP header per request
-    in `_document.js` and pass it to `<Main>`/`<NextScript>`). Next.js' own
-    guidance is that nonces require **dynamic rendering** — *"Static
-    optimization and Incremental Static Regeneration (ISR) are disabled"*,
-    pages lose CDN caching and pay a server render per request. This app is
-    built on ISR by design (decision 13), and nothing here has the strict
-    requirement that prohibits `'unsafe-inline'` in the first place. So the
-    hardening stops at the env-aware `'unsafe-eval'` split; the nonce path
-    stays conditional on either an App Router migration or a decision to trade
-    ISR away.
+    wrong reason: Pages Router *can* do nonces — a per-request CSP header with
+    `crypto.randomUUID()`, exactly the pattern in the Next.js docs. That
+    implementation was built, shipped, and then **measured and reverted**
+    (2026-10-20): ISR pages are served with `x-nextjs-cache: HIT`, so their
+    `<script>` tags were emitted at build time without a `nonce` attribute,
+    the per-request nonce CSP blocked every script, and the pages never
+    hydrated (sign-in timed out after two minutes). The Next.js docs say the
+    same thing in prose: *"Static pages are generated at build time, when no
+    request or response headers exist — so no nonce can be injected"* and
+    *"all pages must be dynamically rendered"*. This app is built on ISR by
+    design (decision 13), and nothing here has the strict requirement that
+    prohibits `'unsafe-inline'` in the first place. So the hardening stops at
+    the env-aware `'unsafe-eval'` split; the nonce path stays conditional on
+    either an App Router migration or a decision to trade ISR away.
+
+19. **The JSON-LD blocks are escaped.** `JSON.stringify` does not escape `<`,
+    so a value containing `</script>` closes the `<script type="application/ld+json">`
+    element early and the browser parses the rest as markup — a stored XSS
+    through admin-editable content (FAQ answers, the settings registry).
+    `lib/seo.js` has `safeJson()`, which escapes `<`, `>`, `&` and the Unicode
+    line separators, and every injection point goes through it.
+
+20. **Settings are split in two, and the studio's values are read.** The
+    registry keys are dotted (`contact.email`) because they are database keys,
+    while the site reads flat properties (`settings.email`). Without the
+    mapping in `lib/cms.js` a saved value lands under a literal dotted key and
+    is never read — the Settings screen would save without changing anything.
+    The mapping is what makes the studio's edits reach the footer, the navbar,
+    the contact page, the JSON-LD and the meta descriptions.
+
+    The deployment's own values — the name, the legal name, the canonical URL
+    and the contact address — are *not* studio-owned: they come from the
+    environment, the admin screen shows them read-only, and the API refuses to
+    write them. Otherwise a row left over from an earlier deployment would
+    quietly override the environment, which is exactly what happened when the
+    domain changed.
+
+21. **Two names, on purpose.** `SITE.name` is the brand the studio trades
+    under — content, in the headings and the legal copy. `SITE.appName` is the
+    name of *this* deployment — the portal, the notification e-mails, the
+    console — and it comes from `APP_NAME`. Before this split the site read
+    "Smart Dental Atelier" in the chrome and "Dental Atelier" in the
+    sentences.
+
+22. **The mailer speaks the protocol in order.** It waits for each reply, and
+    the message body is only written after the server accepts `DATA` — writing
+    it earlier puts the body into the server's error text. The transport
+    follows the port: 465 is implicit TLS, 587 is plaintext plus `STARTTLS`
+    (handshaking immediately on 587 never establishes). `npm run mail:check`
+    walks the same conversation and reports the last stage that worked.
+
+23. **The seed refuses a placeholder password.** `CHANGE_ME` that reaches the
+    database is a working login whose password is published in this
+    repository, so `npm run db:seed` stops rather than create it.
 
     The in-memory rate limiter (`lib/api.js: assertRateLimit`) is deliberately
     single-instance: on Vercel serverless each warm lambda holds its own bucket,
@@ -757,7 +866,7 @@ specification, and why:
 
 ## Sources
 
-Copy, images and structure come from [dentalatelier.co](https://smart-dentalatelier.cromstelit.com)
+Copy, images and structure come from the studio's own site
 (© Dental Atelier Michal Siakel, VAT BE 0504872627). Patient photographs remain
 the property of the studio and are included here for the purpose of rebuilding
 their own site.
