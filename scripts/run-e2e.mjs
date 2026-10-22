@@ -63,13 +63,6 @@ const port = env.PORT || '4040';
 env.NEXTAUTH_URL = `http://127.0.0.1:${port}`;
 env.E2E_BASE_URL = env.NEXTAUTH_URL;
 
-if (!env.ADMIN_PASSWORD) {
-  console.warn(
-    '[test:e2e] ADMIN_PASSWORD is not set in .env.local or .env —\n' +
-      '           the portal tests will be skipped.',
-  );
-}
-
 /**
  * The suite is local-only: the sources are not in the repository (see
  * .gitignore), so a fresh clone has nothing to run. Say that plainly instead
@@ -86,6 +79,13 @@ if (!hasLocalSuite) {
   console.log('[test:e2e] no local end-to-end suite (tests/e2e is empty or absent).');
   console.log('[test:e2e] the suite is not part of the repository; nothing to run.');
   process.exit(0);
+}
+
+if (!env.ADMIN_PASSWORD) {
+  console.warn(
+    '[test:e2e] ADMIN_PASSWORD is not set in .env.local or .env —\n' +
+      '           the portal tests will be skipped.',
+  );
 }
 
 const cli = path.join(projectRoot, 'node_modules', '@playwright', 'test', 'cli.js');
