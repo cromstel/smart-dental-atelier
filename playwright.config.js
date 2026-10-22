@@ -21,7 +21,9 @@ import nextConfig from './next.config.js';
  * `PORT` comes from the environment (or `.env`); the fallback is Next.js'
  * own default, so the number is never duplicated in the repository.
  */
-const PORT = Number(process.env.PORT || readEnvFile('PORT') || nextConfig.PORT) || 3000;
+const PORT =
+  Number(process.env.PORT || readEnvFile('PORT') || nextConfig[Symbol.for('dental-atelier.port')]) ||
+  3000;
 
 /**
  * NextAuth sets its CSRF cookie for `NEXTAUTH_URL`'s host. If the suite browses

@@ -43,16 +43,15 @@ jobs:
           --health-timeout=5s
           --health-retries=12
 
+    # The `env` context is not available here (GitHub allows only github,
+    # needs, strategy, matrix, vars, secrets and inputs at job level), so
+    # this block holds literals only. The values that derive from PORT are
+    # attached to the steps that need them, where `env.PORT` does resolve.
     env:
-      PORT: ${{ env.PORT }}
-      APP_NAME: ${{ env.APP_NAME }}
-      NEXT_PUBLIC_APP_NAME: ${{ env.APP_NAME }}
       DATABASE_URL: mysql://smart_dental_atelier:smart_dental_atelier@127.0.0.1:3306/smart_dental_atelier
-      NEXTAUTH_URL: http://127.0.0.1:${{ env.PORT }}
       NEXTAUTH_SECRET: ci-only-secret-not-used-anywhere-real
       ADMIN_EMAIL: ci@dentalatelier.local
       ADMIN_PASSWORD: CiAdminPassword-2026
-      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:${{ env.PORT }}
 
     steps:
       - uses: actions/checkout@v7
@@ -99,12 +98,23 @@ jobs:
         run: npx prisma migrate deploy
 
       - name: Seed content
+        env:
+          APP_NAME: ${{ env.APP_NAME }}
         run: npm run db:seed
 
       - name: Build
+        env:
+          APP_NAME: ${{ env.APP_NAME }}
+          NEXT_PUBLIC_APP_NAME: ${{ env.APP_NAME }}
+          NEXT_PUBLIC_SITE_URL: http://127.0.0.1:${{ env.PORT }}
         run: npm run build
 
       - name: Smoke-test the production server
+        env:
+          APP_NAME: ${{ env.APP_NAME }}
+          NEXT_PUBLIC_APP_NAME: ${{ env.APP_NAME }}
+          NEXTAUTH_URL: http://127.0.0.1:${{ env.PORT }}
+          NEXT_PUBLIC_SITE_URL: http://127.0.0.1:${{ env.PORT }}
         run: |
           npm start &
           for i in $(seq 1 30); do
@@ -132,15 +142,10 @@ jobs:
     needs: verify
 
     env:
-      PORT: ${{ env.PORT }}
-      APP_NAME: ${{ env.APP_NAME }}
-      NEXT_PUBLIC_APP_NAME: ${{ env.APP_NAME }}
       DATABASE_URL: mysql://smart_dental_atelier:smart_dental_atelier@127.0.0.1:3306/smart_dental_atelier
-      NEXTAUTH_URL: http://127.0.0.1:${{ env.PORT }}
       NEXTAUTH_SECRET: ci-only-secret-not-used-anywhere-real
       ADMIN_EMAIL: ci@dentalatelier.local
       ADMIN_PASSWORD: CiAdminPassword-2026
-      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:${{ env.PORT }}
 
     steps:
       - uses: actions/checkout@v7
@@ -163,6 +168,10 @@ jobs:
 
       - name: Build
         if: ${{ hashFiles('tests/e2e/**') != '' }}
+        env:
+          APP_NAME: ${{ env.APP_NAME }}
+          NEXT_PUBLIC_APP_NAME: ${{ env.APP_NAME }}
+          NEXT_PUBLIC_SITE_URL: http://127.0.0.1:${{ env.PORT }}
         run: npm run build
 
       # webServer in playwright.config.js runs `npm start`, which binds $PORT.
