@@ -16,6 +16,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import nextConfig from '../next.config.js';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -58,8 +59,13 @@ for (const key of KEYS) {
   if (value) env[key] = value;
 }
 
-// The suite browses the local server, so the origin follows the port.
-const port = env.PORT || '4040';
+// The suite browses the local server, so the origin follows the port the
+// launcher binds to: the environment first, then the env files, then the
+// port the Next config resolved - the same chain scripts/run-next.mjs uses.
+// Next.js' own default (3000) is the last resort, so no port number is
+// written into this file.
+const configuredPort = nextConfig[Symbol.for('dental-atelier.port')];
+const port = env.PORT || configuredPort || 3000;
 env.NEXTAUTH_URL = `http://127.0.0.1:${port}`;
 env.E2E_BASE_URL = env.NEXTAUTH_URL;
 

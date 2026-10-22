@@ -146,9 +146,16 @@ const nextConfig = {
 const withBundleAnalyzer = require('@next/bundle-analyzer')({ enabled: process.env.ANALYZE === 'true' });
 
 /**
+ * The shared port, exposed under a symbol.
+ *
  * Next validates this object strictly and warns about unknown keys, so the
- * shared port is exposed on a symbol-ish extra property that the config schema
- * ignores, rather than as a sibling key.
+ * port is not a sibling key: it hangs off a symbol, which the schema cannot
+ * see. `Symbol.for` gives the same key to every module that asks for it, so
+ * the Playwright config and the end-to-end runner read the very same value
+ * the launcher passes to Next.
  */
+const PORT_KEY = Symbol.for('dental-atelier.port');
+
 const analyzedConfig = withBundleAnalyzer(nextConfig);
+analyzedConfig[PORT_KEY] = PORT;
 module.exports = analyzedConfig;
