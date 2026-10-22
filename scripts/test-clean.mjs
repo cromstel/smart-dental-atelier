@@ -94,6 +94,9 @@ function trackedFiles() {
       cwd: projectRoot,
       encoding: 'utf8',
       maxBuffer: 16 * 1024 * 1024,
+      // The output is captured, so a directory that is not a repository fails
+      // quietly instead of printing git's complaint.
+      stdio: ['ignore', 'pipe', 'pipe'],
     });
     return new Set(output.split('\0').filter(Boolean));
   } catch {
