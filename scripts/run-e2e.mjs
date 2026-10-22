@@ -70,6 +70,24 @@ if (!env.ADMIN_PASSWORD) {
   );
 }
 
+/**
+ * The suite is local-only: the sources are not in the repository (see
+ * .gitignore), so a fresh clone has nothing to run. Say that plainly instead
+ * of letting Playwright fail with "no tests found".
+ */
+const e2eDir = path.join(projectRoot, 'tests', 'e2e');
+const hasLocalSuite =
+  fs.existsSync(e2eDir) &&
+  fs
+    .readdirSync(e2eDir)
+    .some((entry) => entry.endsWith('.spec.js') || entry.endsWith('.spec.ts'));
+
+if (!hasLocalSuite) {
+  console.log('[test:e2e] no local end-to-end suite (tests/e2e is empty or absent).');
+  console.log('[test:e2e] the suite is not part of the repository; nothing to run.');
+  process.exit(0);
+}
+
 const cli = path.join(projectRoot, 'node_modules', '@playwright', 'test', 'cli.js');
 const child = spawn(process.execPath, [cli, 'test', ...process.argv.slice(2)], {
   cwd: projectRoot,
