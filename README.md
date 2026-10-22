@@ -161,8 +161,10 @@ substitute it.
 | `npm run build` | `prisma generate` + production build |
 | `npm start` | Serve the production build |
 | `npm run lint` | ESLint 9 flat config (`eslint.config.mjs`) |
-| `npm test` | Jest: unit, API and lib suites |
-| `npm run test:e2e` | Playwright against a running build |
+| `npm test` | Jest: unit, API and lib suites (local-only, see [Testing](#testing)) |
+| `npm run test:e2e` | Playwright against a running build (local-only) |
+| `npm run test:clean` | Remove what a test run left behind (runs automatically after `npm test` and `npm run test:e2e`) |
+| `npm run test:purge` | Archive the local test sources to the temp directory, then remove them |
 | `npm run db:migrate` | Create and apply a migration in development |
 | `npm run db:deploy` | Apply pending migrations (production) |
 | `npm run db:seed` | Load/refresh the bundled content |
@@ -458,9 +460,22 @@ record is created and the file is on disk either way.
 ## Testing
 
 ```bash
-npm test              # 172 tests: unit, API, lib
+npm test              # 195 tests: unit, API, lib
 npm run test:e2e      # Playwright (needs a database and a production build)
 ```
+
+> **The test suite is local-only.** The sources are never committed, never
+> pushed to the remote, and never part of the production image. `.gitignore`
+> keeps `tests/` and every `*.test.*` / `*.spec.*` file out of the
+> repository, and `.dockerignore` keeps them out of the image. The suite
+> lives in the working copy only — which means it is also the only copy.
+>
+> Because the suite is not in the repository, CI cannot run it: the workflow
+> verifies the build and the running server instead, and skips the test steps
+> when no suite is present. `npm run test:clean` removes what a run leaves
+> behind (coverage, reports, caches, scratch files) and runs automatically
+> after `npm test` and `npm run test:e2e`. `npm run test:purge` archives the
+> sources to the system temp directory before removing them.
 
 | Suite | Location | Covers |
 | --- | --- | --- |
