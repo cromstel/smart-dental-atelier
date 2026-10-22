@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/marketing/HeroSection';
 import SectionHeading from '@/components/marketing/SectionHeading';
 import InfoCard from '@/components/marketing/InfoCard';
 import CtaBanner from '@/components/marketing/CtaBanner';
+import { SITE } from '@/lib/content';
 import { getServices, getSettings } from '@/lib/cms';
 import { serializeDates } from '@/lib/serialize';
 import { breadcrumbJsonLd } from '@/lib/seo';

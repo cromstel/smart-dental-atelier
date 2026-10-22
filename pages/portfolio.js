@@ -7,7 +7,7 @@ import SectionHeading from '@/components/marketing/SectionHeading';
 import BeforeAfter from '@/components/marketing/BeforeAfter';
 import ImageGallery from '@/components/marketing/ImageGallery';
 import ContactForm from '@/components/forms/ContactForm';
-import { PORTFOLIO_BEFORE_AFTER } from '@/lib/content';
+import { PORTFOLIO_BEFORE_AFTER, SITE } from '@/lib/content';
 import { getGallery, getSettings } from '@/lib/cms';
 import { serializeDates } from '@/lib/serialize';
 import { breadcrumbJsonLd } from '@/lib/seo';

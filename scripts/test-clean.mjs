@@ -32,6 +32,20 @@ import { fileURLToPath } from 'node:url';
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const purgeSources = process.argv.includes('--purge-sources');
 const deep = process.argv.includes('--all');
+const broadScratch = process.argv.includes('--broad-scratch');
+
+/**
+ * Scratch files this workflow is known to create.
+ *
+ * The pattern is deliberately narrow: it must not catch an unrelated
+ * untracked file that happens to sit in the project root. The broader
+ * sweep (`*_report.*`, `*.tmp`, every `*.log`) is available behind
+ * `--broad-scratch`, and only then.
+ */
+const SCRATCH_PATTERN = /^(.*_out|out|scratch_.*)\.(txt|log)$/i;
+const BROAD_SCRATCH_PATTERN = /^(.*_out|-out|out|scratch_.*|.*_report|.*\.tmp)\.(txt|log|json)$/i;
+
+const scratchPattern = broadScratch ? BROAD_SCRATCH_PATTERN : SCRATCH_PATTERN;
 
 /** Directories a test run fills. All of them are regenerated on demand. */
 const ARTIFACT_DIRS = [
@@ -42,9 +56,6 @@ const ARTIFACT_DIRS = [
   '.playwright',
   'node_modules/.cache',
 ];
-
-/** Scratch files an agent or a script leaves in the project root. */
-const SCRATCH_PATTERN = /^(.*_out|-out|out|scratch_.*|.*_report|.*\.tmp)\.(txt|log|json)$/i;
 
 /** Never touched, whatever the arguments say. */
 const PROTECTED = new Set(['.git', 'node_modules', 'public', 'docs', 'scripts', 'lib', 'pages', 'components']);
@@ -142,7 +153,7 @@ for (const entry of fs.readdirSync(os.tmpdir(), { withFileTypes: true })) {
  * ------------------------------------------------------------------ */
 for (const entry of fs.readdirSync(projectRoot, { withFileTypes: true })) {
   if (!entry.isFile()) continue;
-  if (!SCRATCH_PATTERN.test(entry.name)) continue;
+  if (!scratchPattern.test(entry.name)) continue;
   const relative = entry.name;
   if (tracked.has(relative)) continue;
   remove(path.join(projectRoot, relative));
@@ -156,16 +167,40 @@ if (purgeSources) {
   const source = path.join(projectRoot, 'tests');
   if (fs.existsSync(source)) {
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-    archive = path.join(os.tmpdir(), `smart-dental-atelier-tests-${stamp}.tar.gz`);
+    // The archive holds the only copy of the suite, so it does not go to the
+    // system temp directory: that is cleaned on a schedule, and the copy
+    // would be gone without anyone noticing. `TEST_ARCHIVE_DIR` chooses the
+    // place; the default is a folder in the user's home.
+    const archiveDir =
+      process.env.TEST_ARCHIVE_DIR || path.join(os.homedir(), '.dental-atelier', 'test-archive');
+    archive = path.join(archiveDir, `smart-dental-atelier-tests-${stamp}.tar.gz`);
 
     try {
+      fs.mkdirSync(archiveDir, { recursive: true });
       execFileSync('tar', ['-czf', archive, '-C', projectRoot, 'tests'], { stdio: 'pipe' });
     } catch (error) {
       archive = null;
       failures.push(`archive failed: ${error.message} - the sources were left in place`);
     }
 
+    // The archive is verified before the sources are removed: an archive that
+    // cannot be listed is not a backup.
     if (archive && fs.existsSync(archive)) {
+      try {
+        const listing = execFileSync('tar', ['-tzf', archive], { encoding: 'utf8', stdio: 'pipe' });
+        if (!listing.includes('tests/')) {
+          throw new Error('the archive does not contain the test sources');
+        }
+      } catch (error) {
+        archive = null;
+        failures.push(`the archive could not be verified: ${error.message} - the sources were left in place`);
+      }
+    } else {
+      archive = null;
+      failures.push('the archive was not written - the sources were left in place');
+    }
+
+    if (archive) {
       remove(source, { protectSources: false });
     }
   }

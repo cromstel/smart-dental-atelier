@@ -60,14 +60,20 @@ if (!['dev', 'start', 'build'].includes(command)) {
 
 const port = configuredPort();
 const args = [command];
-if (port) args.push('--port', port);
 
-// `HOST` decides the bind address. Next.js already listens on every
-// interface by default, so it is only passed when it is set explicitly —
-// e.g. `HOST=0.0.0.0` to make the app reachable from other devices on the
-// local network.
-const host = process.env.HOST || readEnvFile('.env.local', 'HOST') || readEnvFile('.env', 'HOST');
-if (host) args.push('--hostname', host);
+// `--port` and `--hostname` are server flags: `next build` does not accept
+// them, so a build launched through this script would fail. Only the two
+// commands that actually serve HTTP get them.
+if (command !== 'build') {
+  if (port) args.push('--port', port);
+
+  // `HOST` decides the bind address. Next.js already listens on every
+  // interface by default, so it is only passed when it is set explicitly —
+  // e.g. `HOST=0.0.0.0` to make the app reachable from other devices on the
+  // local network.
+  const host = process.env.HOST || readEnvFile('.env.local', 'HOST') || readEnvFile('.env', 'HOST');
+  if (host) args.push('--hostname', host);
+}
 
 // The Next.js CLI is a Node script, so it is run through the current
 // interpreter rather than through the `.cmd` shim: no shell, no argument

@@ -73,15 +73,26 @@ env.E2E_BASE_URL = env.NEXTAUTH_URL;
  * The suite is local-only: the sources are not in the repository (see
  * .gitignore), so a fresh clone has nothing to run. Say that plainly instead
  * of letting Playwright fail with "no tests found".
+ *
+ * The search is recursive: Playwright discovers specs in nested directories
+ * too, so a suite that only has `tests/e2e/admin/portal.spec.js` has to be
+ * found as well.
  */
-const e2eDir = path.join(projectRoot, 'tests', 'e2e');
-const hasLocalSuite =
-  fs.existsSync(e2eDir) &&
-  fs
-    .readdirSync(e2eDir)
-    .some((entry) => entry.endsWith('.spec.js') || entry.endsWith('.spec.ts'));
+function hasSpecs(directory) {
+  if (!fs.existsSync(directory)) return false;
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    if (entry.isDirectory()) {
+      if (hasSpecs(path.join(directory, entry.name))) return true;
+      continue;
+    }
+    if (entry.name.endsWith('.spec.js') || entry.name.endsWith('.spec.ts')) return true;
+  }
+  return false;
+}
 
-if (!hasLocalSuite) {
+const e2eDir = path.join(projectRoot, 'tests', 'e2e');
+
+if (!hasSpecs(e2eDir)) {
   console.log('[test:e2e] no local end-to-end suite (tests/e2e is empty or absent).');
   console.log('[test:e2e] the suite is not part of the repository; nothing to run.');
   process.exit(0);

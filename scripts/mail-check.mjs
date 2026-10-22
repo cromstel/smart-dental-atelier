@@ -20,8 +20,14 @@ import fs from 'node:fs';
 import net from 'node:net';
 import tls from 'node:tls';
 import dns from 'node:dns/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const projectRoot = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
+// `fileURLToPath`, not `URL.pathname`: the latter keeps the percent-encoding
+// of the path, so a project directory with a space in its name ("C:\Users\Jane
+// Doe\...") would resolve to a path that does not exist — and the reader
+// below would swallow the error and report every setting as unset.
+const projectRoot = path.join(fileURLToPath(new URL('..', import.meta.url)), path.sep);
 
 function readEnvFile(file, key) {
   try {
@@ -40,12 +46,32 @@ function setting(key) {
   return process.env[key] || readEnvFile('.env.local', key) || readEnvFile('.env', key);
 }
 
+/**
+ * The default port per provider, exactly as `lib/mailer` resolves it.
+ *
+ * Without this the check would refuse to run on a setup that works in
+ * production: `SMTP_PROVIDER=gmail` with no `SMTP_PORT` is a valid
+ * configuration, and the mailer sends on 587.
+ */
+const PROVIDER_PORTS = {
+  gmail: '587',
+  smtp: '587',
+  sendgrid: '587',
+  mailgun: '587',
+  local: '1025',
+};
+
 const host = setting('SMTP_HOST') || '';
-const port = String(setting('SMTP_PORT') || '');
+const port = String(
+  setting('SMTP_PORT') || PROVIDER_PORTS[String(setting('SMTP_PROVIDER') || '').toLowerCase()] || '',
+);
 const user = setting('SMTP_USER') || '';
 const password = setting('SMTP_PASSWORD') || '';
 const from = setting('SMTP_FROM') || user;
-const to = setting('NOTIFY_EMAIL') || '';
+// `deliver()` falls back to `SITE.email` when NOTIFY_EMAIL is unset. The
+// site settings live in the database here, so the fallback is not always
+// readable — but the check must not report a false failure either.
+const to = setting('NOTIFY_EMAIL') || setting('SITE_EMAIL') || '';
 
 const ok = (message) => console.log(`  \x1b[32mOK\x1b[0m    ${message}`);
 const info = (message) => console.log(`  \x1b[36m--\x1b[0m    ${message}`);
@@ -62,6 +88,10 @@ if (!host || !port) {
 }
 if (!user || !password) {
   bad('SMTP_USER and SMTP_PASSWORD must be set.');
+  process.exit(1);
+}
+if (!to) {
+  bad('NOTIFY_EMAIL must be set (the app falls back to SITE.email, which this check cannot read).');
   process.exit(1);
 }
 
