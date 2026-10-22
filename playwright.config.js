@@ -18,8 +18,9 @@ import nextConfig from './next.config.js';
 /**
  * The port under test.
  *
- * `PORT` comes from the environment (or `.env`); the fallback is Next.js'
- * own default, so the number is never duplicated in the repository.
+ * `PORT` comes from the environment, then `.env.local`, then `.env`; the
+ * fallback is Next.js' own default, so the number is never duplicated in the
+ * repository.
  */
 const PORT =
   Number(process.env.PORT || readEnvFile('PORT') || nextConfig[Symbol.for('dental-atelier.port')]) ||
@@ -29,7 +30,7 @@ const PORT =
  * NextAuth sets its CSRF cookie for `NEXTAUTH_URL`'s host. If the suite browses
  * a different origin, sign-in fails with a CSRF mismatch and the login tests
  * bounce back to `/auth/login`. The origin comes from `NEXTAUTH_URL`, with
- * `.env` read here because Playwright does not load it for us.
+ * the env files read here because Playwright does not load them for us.
  *
  * The environment wins over the file, matching how dotenv and Next themselves
  * resolve it — an exported `NEXTAUTH_URL` has to be able to override the file,
@@ -39,18 +40,28 @@ function nextAuthOrigin() {
   return process.env.NEXTAUTH_URL || readEnvFile('NEXTAUTH_URL') || null;
 }
 
-/** Minimal `.env` reader — enough for the one key this config needs. */
+/**
+ * Minimal environment-file reader — the keys this config needs.
+ *
+ * `.env.local` is read before `.env`, the same order the launcher
+ * (`scripts/run-next.mjs`) uses, so the suite and the server can never end
+ * up on different ports.
+ */
 function readEnvFile(key) {
-  try {
-    const line = fs
-      .readFileSync('.env', 'utf8')
-      .split(/\r?\n/)
-      .find((entry) => entry.trim().startsWith(`${key}=`));
-    if (!line) return null;
-    return line.slice(line.indexOf('=') + 1).trim().replace(/^["']|["']$/g, '');
-  } catch {
-    return null;
+  for (const file of ['.env.local', '.env']) {
+    try {
+      const line = fs
+        .readFileSync(file, 'utf8')
+        .split(/\r?\n/)
+        .find((entry) => entry.trim().startsWith(`${key}=`));
+      if (line) {
+        return line.slice(line.indexOf('=') + 1).trim().replace(/^["']|["']$/g, '');
+      }
+    } catch {
+      // No such file: try the next one.
+    }
   }
+  return null;
 }
 
 const origin = nextAuthOrigin();

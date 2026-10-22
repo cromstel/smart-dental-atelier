@@ -24,6 +24,11 @@ export default function ScrollToTop({ threshold = 300 }) {
       type="button"
       onClick={scrollUp}
       aria-label="Scroll to top"
+      // While it is invisible it must also be unreachable: a keyboard user
+      // would otherwise tab onto a button they cannot see, and a screen
+      // reader would announce a control that is not on screen.
+      tabIndex={visible ? 0 : -1}
+      aria-hidden={!visible}
       className={[
         'fixed bottom-6 right-6 z-50 rounded-full shadow-lg transition-all duration-300 ease-out',
         'bg-brand-400 text-black hover:bg-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-300/60',

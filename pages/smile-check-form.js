@@ -4,6 +4,7 @@ import Seo from '@/components/Seo';
 import Section from '@/components/ui/Section';
 import { PageHeader } from '@/components/marketing/HeroSection';
 import SmileCheckForm from '@/components/forms/SmileCheckForm';
+import { SITE } from '@/lib/content';
 import { getSettings, getSmileCheckQuestions } from '@/lib/cms';
 import { serializeDates } from '@/lib/serialize';
 import { breadcrumbJsonLd } from '@/lib/seo';

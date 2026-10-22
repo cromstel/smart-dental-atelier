@@ -8,22 +8,7 @@ import { apiHandler, methodNotAllowed, requireAdmin, HttpError } from '@/lib/api
 import { gallerySchema } from '@/lib/validation';
 import { audit } from '@/lib/audit';
 import { parsePagination } from '@/lib/guards';
-
-/**
- * Where the transcoded images land.
- *
- * `GALLERY_STORAGE_DIR` may be relative to the project root (the default is
- * `public/uploads` — the directory Next serves statically) or an absolute
- * path (a mounted volume in the container). The bundler cannot statically
- * trace a path that comes from the environment, so the dynamic call is opted
- * out of tracing: without it the whole project would be traced into the
- * deployment, which slows the build and can break the size limits.
- */
-const CONFIGURED_DIR = process.env.GALLERY_STORAGE_DIR;
-
-const UPLOAD_DIR = CONFIGURED_DIR
-  ? path.resolve(/*turbopackIgnore: true*/ CONFIGURED_DIR)
-  : path.join(process.cwd(), 'public', 'uploads');
+import { UPLOAD_DIR, URL_PREFIX, isStorageServable } from '@/lib/gallery';
 
 const MAX_FILE_BYTES = 6 * 1024 * 1024;
 const ALLOWED = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif']);
@@ -143,8 +128,19 @@ export default apiHandler(async (req, res) => {
 
     // The name is fixed up front so validation can run against the final URL
     // before anything is written: a rejected form must not leave a file behind.
+    //
+    // The storage directory has to be one the application serves. A
+    // directory outside `public` would store a picture whose URL 404s, so
+    // the upload is refused instead of "succeeding" silently.
+    if (!isStorageServable) {
+      throw new HttpError(
+        500,
+        'The gallery storage directory is not served by the application. GALLERY_STORAGE_DIR has to point inside the public directory.',
+      );
+    }
+
     const name = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}.webp`;
-    const url = `${process.env.GALLERY_URL_PREFIX || '/uploads'}/${name}`;
+    const url = `${URL_PREFIX}/${name}`;
 
     try {
       const file = Array.isArray(parsed.files.file) ? parsed.files.file[0] : parsed.files.file;

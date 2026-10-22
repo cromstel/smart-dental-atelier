@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/marketing/HeroSection';
 import SectionHeading from '@/components/marketing/SectionHeading';
 import TestimonialCard from '@/components/marketing/TestimonialCard';
 import CtaBanner from '@/components/marketing/CtaBanner';
+import { SITE } from '@/lib/content';
 import { getSettings, getTestimonials } from '@/lib/cms';
 import { serializeDates } from '@/lib/serialize';
 import { breadcrumbJsonLd } from '@/lib/seo';

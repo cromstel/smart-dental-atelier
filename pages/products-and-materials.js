@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/marketing/HeroSection';
 import SectionHeading from '@/components/marketing/SectionHeading';
 import InfoCard from '@/components/marketing/InfoCard';
 import RequestInfoForm from '@/components/forms/RequestInfoForm';
-import { MATERIALS } from '@/lib/content';
+import { MATERIALS, SITE } from '@/lib/content';
 import { getServices, getSettings } from '@/lib/cms';
 import { serializeDates } from '@/lib/serialize';
 import { breadcrumbJsonLd } from '@/lib/seo';

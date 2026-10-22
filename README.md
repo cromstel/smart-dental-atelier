@@ -475,7 +475,8 @@ npm run test:e2e      # Playwright (needs a database and a production build)
 > when no suite is present. `npm run test:clean` removes what a run leaves
 > behind (coverage, reports, caches, scratch files) and runs automatically
 > after `npm test` and `npm run test:e2e`. `npm run test:purge` archives the
-> sources to the system temp directory before removing them.
+> sources to `~/.dental-atelier/test-archive` (or to `TEST_ARCHIVE_DIR`, when
+> set) before removing them.
 
 | Suite | Location | Covers |
 | --- | --- | --- |
@@ -620,8 +621,20 @@ Production notes:
 ### Kubernetes
 
 `k8s/` contains manifests for the deployment, service, ingress, config and the
-database secret reference. Apply with `kubectl apply -f k8s/`, after filling in
-the ingress host and creating the secret named in `k8s/secret.example.yaml`.
+database secret reference. The resource identifiers are substituted from
+`K8S_NAME` (a DNS-1123 label: lower case, digits and dashes) and the brand
+from `APP_NAME`, so the same manifests serve any deployment:
+
+```bash
+cp k8s/secret.example.yaml k8s/secret.yaml   # fill in, never commit
+export K8S_NAME=smart-dental-atelier APP_NAME="Smart Dental Atelier" \
+       PORT=4040 SITE_URL=https://example.com INGRESS_HOST=example.com
+envsubst < k8s/secret.yaml | kubectl apply -f -      # the Secret first
+envsubst < k8s/deployment.yaml | kubectl apply -f -  # then the workload
+```
+
+The Secret is applied before the Deployment, because the workload references
+it.
 
 ### Going live checklist
 

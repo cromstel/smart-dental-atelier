@@ -5,11 +5,18 @@
 # deployment:
 #
 #   1. cp k8s/secret.example.yaml k8s/secret.yaml   # fill in, never commit
-#   2. export APP_NAME=... PORT=... SITE_URL=... INGRESS_HOST=...
-#   3. envsubst < k8s/deployment.yaml | kubectl apply -f -
+#   2. export K8S_NAME=... APP_NAME=... PORT=... SITE_URL=... INGRESS_HOST=...
+#   3. envsubst < k8s/secret.yaml | kubectl apply -f -      # the Secret first
+#   4. envsubst < k8s/deployment.yaml | kubectl apply -f -  # then the workload
 #
-# `${APP_NAME}` and `${PORT}` are expanded by `envsubst`; the values come from
+# `${K8S_NAME}` and `${PORT}` are expanded by `envsubst`; the values come from
 # the same `.env` the app itself reads.
+#
+# Two names, deliberately: `K8S_NAME` is the resource identifier and has to be
+# a DNS-1123 label (lower case, digits and dashes). The brand is display text
+# and is not a valid resource name, so `APP_NAME` only appears where a human
+# reads it. The Secret is applied before the Deployment, because the workload
+# references it.
 #
 # The database is expected to be managed externally (PlanetScale / RDS / your
 # own MySQL); it is deliberately not defined here.
@@ -17,13 +24,13 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: ${APP_NAME}
+  name: ${K8S_NAME}
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: ${APP_NAME}-config
-  namespace: ${APP_NAME}
+  name: ${K8S_NAME}-config
+  namespace: ${K8S_NAME}
 data:
   APP_NAME: '${APP_NAME}'
   NEXT_PUBLIC_APP_NAME: '${APP_NAME}'
@@ -51,10 +58,10 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ${APP_NAME}
-  namespace: ${APP_NAME}
+  name: ${K8S_NAME}
+  namespace: ${K8S_NAME}
   labels:
-    app.kubernetes.io/name: ${APP_NAME}
+    app.kubernetes.io/name: ${K8S_NAME}
     app.kubernetes.io/component: web
 spec:
   replicas: 2
@@ -65,11 +72,11 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app.kubernetes.io/name: ${APP_NAME}
+      app.kubernetes.io/name: ${K8S_NAME}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: ${APP_NAME}
+        app.kubernetes.io/name: ${K8S_NAME}
     spec:
       securityContext:
         runAsNonRoot: true
@@ -77,18 +84,18 @@ spec:
           type: RuntimeDefault
       containers:
         - name: web
-          image: ghcr.io/your-org/${APP_NAME}:latest
+          image: ghcr.io/your-org/${K8S_NAME}:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
               containerPort: ${PORT}
           envFrom:
             - configMapRef:
-                name: ${APP_NAME}-config
+                name: ${K8S_NAME}-config
             # DATABASE_URL, NEXTAUTH_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD,
             # SMTP_USER, SMTP_PASSWORD, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
             - secretRef:
-                name: ${APP_NAME}-secrets
+                name: ${K8S_NAME}-secrets
           # Prisma needs a writable tmp for its engine extraction.
           volumeMounts:
             - name: tmp
@@ -129,17 +136,17 @@ spec:
           emptyDir: {}
         - name: uploads
           persistentVolumeClaim:
-            claimName: ${APP_NAME}-uploads
+            claimName: ${K8S_NAME}-uploads
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: ${APP_NAME}
-  namespace: ${APP_NAME}
+  name: ${K8S_NAME}
+  namespace: ${K8S_NAME}
 spec:
   type: ClusterIP
   selector:
-    app.kubernetes.io/name: ${APP_NAME}
+    app.kubernetes.io/name: ${K8S_NAME}
   ports:
     - name: http
       port: 80
@@ -149,8 +156,8 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ${APP_NAME}
-  namespace: ${APP_NAME}
+  name: ${K8S_NAME}
+  namespace: ${K8S_NAME}
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/proxy-body-size: '8m'
@@ -159,7 +166,7 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts: ['${INGRESS_HOST}']
-      secretName: ${APP_NAME}-tls
+      secretName: ${K8S_NAME}-tls
   rules:
     - host: ${INGRESS_HOST}
       http:
@@ -168,15 +175,15 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: ${APP_NAME}
+                name: ${K8S_NAME}
                 port:
                   name: http
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: ${APP_NAME}-uploads
-  namespace: ${APP_NAME}
+  name: ${K8S_NAME}-uploads
+  namespace: ${K8S_NAME}
 spec:
   accessModes:
     - ReadWriteMany
@@ -189,13 +196,13 @@ spec:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: ${APP_NAME}
-  namespace: ${APP_NAME}
+  name: ${K8S_NAME}
+  namespace: ${K8S_NAME}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: ${APP_NAME}
+    name: ${K8S_NAME}
   minReplicas: 2
   maxReplicas: 6
   metrics:

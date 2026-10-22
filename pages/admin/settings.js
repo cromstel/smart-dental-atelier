@@ -200,7 +200,14 @@ export async function getServerSideProps(ctx) {
   const rows = await prisma.setting.findMany();
   const byKey = new Map(rows.map((row) => [row.key, row]));
 
-  const settings = SETTINGS.map((setting) => byKey.get(setting.key) ?? setting);
+  // The env-owned keys (site name, legal name, url, contact e-mail) are read
+  // from the environment, never from the database: `lib/cms` skips a stored
+  // row for them, so a leftover row from an earlier deployment must not win
+  // here either. The screen would show the old domain under its read-only
+  // "from environment" badge, and the administrator could not correct it.
+  const settings = SETTINGS.map((setting) =>
+    ENV_OWNED_SETTINGS.has(setting.key) ? setting : (byKey.get(setting.key) ?? setting),
+  );
 
   return { props: { ...guard.props, settings } };
 }
