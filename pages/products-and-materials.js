@@ -5,8 +5,8 @@ import { PageHeader } from '@/components/marketing/HeroSection';
 import SectionHeading from '@/components/marketing/SectionHeading';
 import InfoCard from '@/components/marketing/InfoCard';
 import RequestInfoForm from '@/components/forms/RequestInfoForm';
-import { MATERIALS } from '@/lib/content';
-import { getServices } from '@/lib/cms';
+import { MATERIALS, SITE } from '@/lib/content';
+import { getServices, getSettings } from '@/lib/cms';
 import { serializeDates } from '@/lib/serialize';
 import { breadcrumbJsonLd } from '@/lib/seo';
 
@@ -15,9 +15,9 @@ const BREADCRUMBS = [
   { label: 'Products & Materials' },
 ];
 
-export default function ProductsAndMaterialsPage({ products = [] }) {
+export default function ProductsAndMaterialsPage({ products = [], settings = SITE }) {
   return (
-    <Layout>
+    <Layout contact={settings}>
       <Seo
         title="Products & Materials"
         description="Facial analysis, diagnostic wax up, provisional crowns, crowns and bridges, implant solutions, inlays/onlays and veneers — all made with certified materials from leading manufacturers."
@@ -75,5 +75,6 @@ export default function ProductsAndMaterialsPage({ products = [] }) {
 
 export async function getStaticProps() {
   const products = await getServices('product');
-  return { props: serializeDates({ products }), revalidate: 300 };
+  const settings = await getSettings();
+  return { props: serializeDates({ products, settings }), revalidate: 300 };
 }

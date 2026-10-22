@@ -7,21 +7,22 @@ import SectionHeading from '@/components/marketing/SectionHeading';
 import BeforeAfter from '@/components/marketing/BeforeAfter';
 import ImageGallery from '@/components/marketing/ImageGallery';
 import ContactForm from '@/components/forms/ContactForm';
-import { PORTFOLIO_BEFORE_AFTER } from '@/lib/content';
-import { getGallery } from '@/lib/cms';
+import { PORTFOLIO_BEFORE_AFTER, SITE } from '@/lib/content';
+import { getGallery, getSettings } from '@/lib/cms';
 import { serializeDates } from '@/lib/serialize';
 import { breadcrumbJsonLd } from '@/lib/seo';
+import { telHref } from '@/lib/format';
 
 const BREADCRUMBS = [
   { label: 'Home', href: '/' },
   { label: 'Portfolio' },
 ];
 
-export default function PortfolioPage({ before = [], after = [], gallery = [] }) {
+export default function PortfolioPage({ before = [], after = [], gallery = [], settings = SITE }) {
   const smileGallery = gallery.filter((image) => image.category === 'smile');
 
   return (
-    <Layout>
+    <Layout contact={settings}>
       <Seo
         title="Portfolio"
         description="Before and after smile transformations produced by Dental Atelier: a wide array of products of superb quality and prime aesthetic value."
@@ -72,8 +73,8 @@ export default function PortfolioPage({ before = [], after = [], gallery = [] })
                 Read the FAQs
               </Link>{' '}
               or call us on{' '}
-              <a href="tel:+3223764326" className="link-underline text-brand-300">
-                +32 2 376 43 26
+              <a href={telHref(settings.phone || SITE.phone)} className="link-underline text-brand-300">
+                {settings.phoneDisplay || settings.phone || SITE.phoneDisplay}
               </a>
               .
             </p>
@@ -104,5 +105,6 @@ export async function getStaticProps() {
     getGallery(),
   ]);
 
-  return { props: serializeDates({ before, after, gallery }), revalidate: 300 };
+  const settings = await getSettings();
+  return { props: serializeDates({ before, after, gallery, settings }), revalidate: 300 };
 }

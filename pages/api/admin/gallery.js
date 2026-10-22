@@ -8,8 +8,8 @@ import { apiHandler, methodNotAllowed, requireAdmin, HttpError } from '@/lib/api
 import { gallerySchema } from '@/lib/validation';
 import { audit } from '@/lib/audit';
 import { parsePagination } from '@/lib/guards';
+import { UPLOAD_DIR, URL_PREFIX, isStorageServable } from '@/lib/gallery';
 
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
 const MAX_FILE_BYTES = 6 * 1024 * 1024;
 const ALLOWED = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif']);
 
@@ -26,7 +26,11 @@ const WEBP_QUALITY = 82;
 const WEBP_EFFORT = 6;
 
 /** Where formidable stages the raw upload before it is transcoded. */
-const TEMP_DIR = path.join(process.cwd(), '.tmp-uploads');
+const CONFIGURED_TEMP_DIR = process.env.GALLERY_TEMP_DIR;
+
+const TEMP_DIR = CONFIGURED_TEMP_DIR
+  ? path.resolve(/*turbopackIgnore: true*/ CONFIGURED_TEMP_DIR)
+  : path.join(process.cwd(), '.tmp-uploads');
 
 /**
  * /api/admin/gallery
@@ -124,8 +128,19 @@ export default apiHandler(async (req, res) => {
 
     // The name is fixed up front so validation can run against the final URL
     // before anything is written: a rejected form must not leave a file behind.
+    //
+    // The storage directory has to be one the application serves. A
+    // directory outside `public` would store a picture whose URL 404s, so
+    // the upload is refused instead of "succeeding" silently.
+    if (!isStorageServable) {
+      throw new HttpError(
+        500,
+        'The gallery storage directory is not served by the application. GALLERY_STORAGE_DIR has to point inside the public directory.',
+      );
+    }
+
     const name = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}.webp`;
-    const url = `/uploads/${name}`;
+    const url = `${URL_PREFIX}/${name}`;
 
     try {
       const file = Array.isArray(parsed.files.file) ? parsed.files.file[0] : parsed.files.file;

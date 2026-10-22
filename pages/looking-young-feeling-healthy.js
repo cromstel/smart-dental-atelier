@@ -9,6 +9,8 @@ import SectionHeading from '@/components/marketing/SectionHeading';
 import ImageGallery from '@/components/marketing/ImageGallery';
 import CtaBanner from '@/components/marketing/CtaBanner';
 import { breadcrumbJsonLd } from '@/lib/seo';
+import { getSettings } from '@/lib/cms';
+import { SITE } from '@/lib/content';
 
 const BREADCRUMBS = [
   { label: 'Home', href: '/' },
@@ -21,9 +23,9 @@ const GALLERY = [
   { url: '/images/smile-young-3.webp', altText: 'Patient looking younger after ceramic restoration', title: 'Younger looking smile' },
 ];
 
-export default function LookingYoungFeelingHealthyPage() {
+export default function LookingYoungFeelingHealthyPage({ settings = SITE }) {
   return (
-    <Layout>
+    <Layout contact={settings}>
       <Seo
         title="Looking young, feeling healthy"
         description="Teeth get more translucent, discoloured and worn with age. Veneers, crowns, bridges and implants reverse most of it — and support the jaw bone."
@@ -112,4 +114,9 @@ export default function LookingYoungFeelingHealthyPage() {
       </Section>
     </Layout>
   );
+}
+
+export async function getStaticProps() {
+  const settings = await getSettings();
+  return { props: { settings }, revalidate: 600 };
 }

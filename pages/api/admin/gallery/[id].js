@@ -1,9 +1,9 @@
 import fs from 'node:fs/promises';
-import path from 'node:path';
 import { prisma, isDatabaseConfigured } from '@/lib/prisma';
 import { apiHandler, methodNotAllowed, requireAdmin, HttpError } from '@/lib/api';
 import { gallerySchema } from '@/lib/validation';
 import { audit } from '@/lib/audit';
+import { resolveStoredFile } from '@/lib/gallery';
 
 /** /api/admin/gallery/[id] — PUT (metadata only) / DELETE (record + file). */
 export default apiHandler(async (req, res) => {
@@ -41,12 +41,14 @@ export default apiHandler(async (req, res) => {
     await prisma.galleryImage.delete({ where: { id } });
 
     // Only remove the file when we uploaded it (never touch the bundled set).
-    if (existing.url.startsWith('/uploads/')) {
-      const target = path.join(process.cwd(), 'public', existing.url.replace(/^\//, ''));
-      // Guard against path traversal via a crafted url.
-      if (target.startsWith(path.join(process.cwd(), 'public', 'uploads'))) {
-        await fs.rm(target, { force: true }).catch(() => {});
-      }
+    // The upload route and this one resolve the file the same way, through
+    // `lib/gallery`: the URL has to be under the configured prefix, and the
+    // resolved path has to stay inside the upload directory. A plain
+    // `startsWith` would also accept `public/uploads-evil`, which is outside
+    // it.
+    const target = resolveStoredFile(existing.url);
+    if (target) {
+      await fs.rm(target, { force: true }).catch(() => {});
     }
 
     await audit({ userId: guard.user.id, action: 'delete', entity: 'GalleryImage', entityId: id });

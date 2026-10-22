@@ -1,5 +1,5 @@
 import { isDatabaseConfigured } from '@/lib/prisma';
-import { apiHandler, methodNotAllowed, HttpError } from '@/lib/api';
+import { apiHandler, methodNotAllowed, HttpError, publicCache } from '@/lib/api';
 import { getTestimonials } from '@/lib/cms';
 
 /**
@@ -11,6 +11,8 @@ export default apiHandler(async (req, res) => {
   if (!isDatabaseConfigured) throw new HttpError(503, 'Content store is unavailable.');
 
   const testimonials = await getTestimonials();
+
+  publicCache(res);
 
   return res.status(200).json({
     count: testimonials.length,

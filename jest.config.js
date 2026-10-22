@@ -32,6 +32,12 @@ const baseConfig = {
     ],
   },
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
+  // The default 5 s per test is not enough for the interaction tests when the
+  // machine is loaded: `userEvent.type` drives a real event per keystroke, and
+  // the suite also runs bcrypt and sharp work. A slow test that is waiting
+  // for a keystroke is not a failing test, and raising the limit keeps a
+  // loaded machine from reporting a phantom regression.
+  testTimeout: 20000,
   moduleDirectories: ['node_modules', '<rootDir>'],
   // Mirrors the `@/*` alias in jsconfig.json. Declared explicitly so the tests
   // resolve the same way regardless of how next/jest reads the jsconfig.
@@ -44,9 +50,6 @@ const baseConfig = {
     'pages/api/**/*.js',
     '!**/node_modules/**',
   ],
-  coverageThreshold: {
-    global: { branches: 40, functions: 50, lines: 55, statements: 55 },
-  },
 };
 
 /** @type {import('jest').Config} */
@@ -76,4 +79,9 @@ const libConfig = {
 module.exports = {
   projects: [unitConfig, apiConfig, libConfig],
   coverageReporters: ['text-summary', 'lcov'],
+  // The threshold belongs to the root configuration: Jest ignores it inside an
+  // individual project and warns about it on every run.
+  coverageThreshold: {
+    global: { branches: 40, functions: 50, lines: 55, statements: 55 },
+  },
 };
