@@ -108,10 +108,15 @@ jobs:
         run: npm run lint
 
       - name: Build (static generation verification)
+        # Prisma 7 resolves DATABASE_URL when loading its config. The content
+        # layer falls back to bundled copy when MySQL is unreachable, so a
+        # placeholder URL is enough for a build gate — no service container.
         env:
           APP_NAME: dental-atelier
           NEXT_PUBLIC_APP_NAME: dental-atelier
           NEXT_PUBLIC_SITE_URL: http://localhost:3000
+          DATABASE_URL: mysql://builder:builder@127.0.0.1:3306/security_scan_build
+          NEXTAUTH_SECRET: security-scan-build-only-not-used-at-runtime
         run: npm run build
 
       - name: Report status
