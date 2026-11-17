@@ -115,9 +115,7 @@ export default function Footer({ contact = {}, copyright }) {
       <div className="border-t border-white/5">
         <div className="container mx-auto flex flex-col gap-2 py-6 text-xs text-silver-600 sm:flex-row sm:items-center sm:justify-between">
           <p>{copyright || `© ${year} ${SITE.legalName}`}</p>
-          <p>
-            Re-implemented from the original Dental Atelier site · Images © their respective authors
-          </p>
+          <p>Powered by CIGROUP</p>
         </div>
       </div>
     </footer>
