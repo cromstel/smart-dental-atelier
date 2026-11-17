@@ -30,8 +30,39 @@ export default function Navbar({ menuItems = NAV_ITEMS, variant = 'light', conta
   const panelId = useId();
   const toggleRef = useRef(null);
   const panelRef = useRef(null);
+  const headerRef = useRef(null);
 
   const isDark = variant === 'dark';
+
+  // The header is sticky, so it stays pinned over the content while the page
+  // scrolls. Publish its rendered height as a CSS custom property so that
+  // fragment navigation (the skip link, in-page anchors) can offset the
+  // target by the same amount and land clear of the header instead of
+  // underneath it. The height is measured rather than hard-coded because the
+  // bar is two rows on desktop and wraps differently on narrow screens.
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return undefined;
+
+    const root = document.documentElement;
+    const publishHeight = () => {
+      root.style.setProperty('--site-header-height', `${header.getBoundingClientRect().height}px`);
+    };
+
+    publishHeight();
+
+    // The height changes when the viewport resizes and when the mobile panel
+    // opens, so it is observed rather than measured once.
+    const observer = new ResizeObserver(publishHeight);
+    observer.observe(header);
+
+    return () => {
+      observer.disconnect();
+      // Routes without the global header (admin, portal, auth) keep an offset
+      // of zero, so their own chrome is not padded by a header that is gone.
+      root.style.setProperty('--site-header-height', '0px');
+    };
+  }, []);
 
   // Close the mobile panel whenever the route changes.
   useEffect(() => {
@@ -72,6 +103,7 @@ export default function Navbar({ menuItems = NAV_ITEMS, variant = 'light', conta
 
   return (
     <header
+      ref={headerRef}
       className={[
         'sticky top-0 z-50 backdrop-blur',
         isDark ? 'bg-ink-900/95' : 'bg-ink-800/80',

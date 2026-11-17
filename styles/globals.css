@@ -215,11 +215,19 @@
 @layer base {
   :root {
     color-scheme: dark;
+
+    /* Height of the sticky site header, published by the Navbar component.
+       It stays at zero on the routes that render their own chrome (admin,
+       portal, auth), so nothing is padded by a header that is not there. */
+    --site-header-height: 0px;
   }
 
   html {
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
+    /* Keep fragment targets (the skip link, in-page anchors) clear of the
+       sticky header when it scrolls them into view. */
+    scroll-padding-top: var(--site-header-height);
   }
 
   body {
