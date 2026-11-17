@@ -71,7 +71,12 @@ export default function Navbar({ menuItems = NAV_ITEMS, variant = 'light', conta
   };
 
   return (
-    <header className={isDark ? 'bg-ink-900/95 backdrop-blur' : 'bg-ink-800/80 backdrop-blur'}>
+    <header
+      className={[
+        'sticky top-0 z-50 backdrop-blur',
+        isDark ? 'bg-ink-900/95' : 'bg-ink-800/80',
+      ].join(' ')}
+    >
       <div className="border-b border-white/5">
         <div className="container mx-auto flex items-center justify-between gap-4 py-2 text-xs">
           <Link href="/contact-us" className="link-underline hidden text-brand-300 sm:inline">

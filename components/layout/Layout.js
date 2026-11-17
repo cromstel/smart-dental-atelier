@@ -1,19 +1,20 @@
-import Navbar from './Navbar';
 import Footer from './Footer';
 import ScrollToTop from './ScrollToTop';
 import { SITE } from '@/lib/content';
 import { telHref } from '@/lib/format';
 
 /**
- * Public site chrome. Every marketing page renders inside this layout, which
- * also provides the skip-link and the single `<h1>`-free landmark structure
- * needed for screen-reader navigation.
+ * Public page chrome below the global site header.
+ *
+ * The header itself is rendered once in `_app.js` so every public page shares
+ * the same full-width bar. This layout provides the skip link, the `<main>`
+ * landmark, the footer, the noscript notice and scroll-to-top. Auth pages pass
+ * `hideFooter` (and previously `hideNavbar`) to render without site chrome.
  *
  * `main` gets `id="main"` so the skip link has a real target.
  */
 export default function Layout({
   children,
-  navbarVariant = 'light',
   className = '',
   hideNavbar = false,
   hideFooter = false,
@@ -21,11 +22,11 @@ export default function Layout({
 }) {
   return (
     <div className="flex min-h-screen flex-col">
-      <a href="#main" className="skip-link">
-        Skip to main content
-      </a>
-
-      {!hideNavbar && <Navbar variant={navbarVariant} contact={contact} />}
+      {hideNavbar ? (
+        <a href="#main" className="skip-link">
+          Skip to main content
+        </a>
+      ) : null}
 
       <main id="main" tabIndex={-1} className={`flex-1 focus:outline-none ${className}`}>
         {children}
