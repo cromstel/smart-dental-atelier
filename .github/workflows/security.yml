@@ -58,21 +58,42 @@ jobs:
         run: |
           echo "Next version: $(node -p 'require("next/package.json").version')"
 
-      - name: Auto-fix via Next.js security agent
+      # `next upgrade --agent` is an agentic HANDOFF: it prints version-matched
+      # instructions for a coding agent and does NOT edit files itself. Capture
+      # that guidance as an artifact rather than claiming an auto-fix happened.
+      - name: Generate upgrade guidance (agentic handoff)
         id: fix
         if: inputs.fix == true || inputs.fix == 'true'
         run: |
-          npx next upgrade --agent=security --yes || \
-            echo "No upgrade available or already at latest version"
+          npx next upgrade --agent=security > upgrade-guidance.txt 2>&1 || true
+          cat upgrade-guidance.txt
 
-      - name: Install if package-lock changed by the upgrade
+      - name: Upload upgrade guidance (artifact)
         if: steps.fix.outcome == 'success'
-        run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+        uses: actions/upload-artifact@v7
+        with:
+          name: upgrade-guidance-${{ github.run_id }}
+          path: upgrade-guidance.txt
+          retention-days: 14
 
-      # Isolation: if a fix is applied, stage on a dedicated branch, NOT main.
+      # Only reinstall when a real dependency change landed on the branch.
+      - name: Reinstall only if dependency files changed
+        if: steps.fix.outcome == 'success'
+        run: |
+          if git diff --quiet -- package.json package-lock.json; then
+            echo "No dependency changes to reinstall."
+          else
+            npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+          fi
+
+      # Isolation: stage a real fix on a dedicated branch, NOT main.
       - name: Create security-fix branch (isolated from release line)
         if: success() && steps.fix.outcome == 'success'
         run: |
+          if git diff --quiet -- package.json package-lock.json; then
+            echo "No dependency changes were applied; skipping branch creation."
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           BRANCH="security/auto-fix-$(date +%Y%m%d)"
