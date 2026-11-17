@@ -22,6 +22,17 @@ export default apiHandler(async (req, res) => {
     // caller nothing about which field was wrong.
     const data = appointmentUpdateSchema.parse(req.body ?? {});
 
+    // COMPLETED and CANCELLED are terminal. The PATCH endpoint enforces this,
+    // so this PUT path must too — otherwise a cancelled appointment can be
+    // resurrected by calling the API directly.
+    if (
+      data.status !== undefined &&
+      data.status !== existing.status &&
+      (existing.status === 'COMPLETED' || existing.status === 'CANCELLED')
+    ) {
+      throw new HttpError(422, 'A completed or cancelled appointment cannot change status.');
+    }
+
     const appointment = await prisma.appointment.update({
       where: { id },
       data: {
