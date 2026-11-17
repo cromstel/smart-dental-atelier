@@ -94,6 +94,7 @@ name, on a different port, against a different mail provider.
 | Variable | Purpose |
 | --- | --- |
 | `APP_NAME` / `NEXT_PUBLIC_APP_NAME` | The name in the navbar, the admin shell, the e-mails and the Open Graph tags. The `NEXT_PUBLIC_` copy is the one the browser bundle sees — set both. |
+| `BRAND_NAME` / `NEXT_PUBLIC_BRAND_NAME` | The brand in headings, page titles, OG tags and the seeded `site.name`. Change it here to rebrand in one place; set both server and browser copies. |
 | `APP_LEGAL_NAME` | The legal entity, used in the JSON-LD organisation block. |
 | `PORT` | The port the server binds to. `npm run dev` / `npm run start` read it; the Dockerfile takes it as a runtime variable; Compose interpolates it; the Kubernetes manifests substitute it. |
 | `NEXTAUTH_URL` | The canonical origin. NextAuth's CSRF cookie is bound to it, and it must match the address visitors use. |
@@ -105,7 +106,7 @@ name, on a different port, against a different mail provider.
 | `SMTP_PROVIDER` | Selects the default port for a known provider (`gmail`, `smtp`, `sendgrid`, `mailgun`, `local`). |
 | `SMTP_HOST` / `SMTP_PORT` | The mail server. `SMTP_PORT` falls back to the provider's default. |
 | `SMTP_USER` / `SMTP_PASSWORD` | The credentials. For Gmail this is an **app password**, not the account password. |
-| `SMTP_FROM` | The envelope sender; defaults to `SMTP_USER`. |
+| `SMTP_FROM` | The envelope sender. Required when SMTP is configured — the mailer refuses to send from an uncontrolled address (no `SMTP_USER` fallback). Leave empty only in dev preview mode. |
 | `NOTIFY_EMAIL` | Where inquiry and appointment notifications are delivered. |
 | `GALLERY_STORAGE_DIR` | Where the transcoded images are written, relative to the project root (default `public/uploads`). `GALLERY_TEMP_DIR` stages the raw upload, `GALLERY_URL_PREFIX` is the public path they are served under. |
 | `APPOINTMENT_TIME_ZONE` | The studio's timezone, shown on the booking form. |
@@ -865,11 +866,12 @@ specification, and why:
     domain changed.
 
 21. **Two names, on purpose.** `SITE.name` is the brand the studio trades
-    under — content, in the headings and the legal copy. `SITE.appName` is the
-    name of *this* deployment — the portal, the notification e-mails, the
-    console — and it comes from `APP_NAME`. Before this split the site read
-    "Smart Dental Atelier" in the chrome and "Dental Atelier" in the
-    sentences.
+    under — content, used in the headings and the legal copy — and it is
+    configurable via `BRAND_NAME` / `NEXT_PUBLIC_BRAND_NAME` so a rebrand
+    stays consistent. `SITE.appName` is the name of *this* deployment — the
+    portal, the notification e-mails, the console — and it comes from
+    `APP_NAME`. Before this split the site read "Smart Dental Atelier" in
+    the chrome and "Dental Atelier" in the sentences.
 
 22. **The mailer speaks the protocol in order.** It waits for each reply, and
     the message body is only written after the server accepts `DATA` — writing

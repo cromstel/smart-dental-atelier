@@ -1,0 +1,124 @@
+name: Weekly Security Scan & Auto-Fix
+
+on:
+  schedule:
+    # Weekly on Monday 06:00 UTC — isolated from the release line.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      fix:
+        description: 'Attempt automatic fix (next upgrade --agent=security)'
+        required: false
+        default: 'true'
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: security-weekly-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan-fix-verify:
+    name: Scan → Report → Fix → Verify
+    runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: '--max-old-space-size=4096'
+    steps:
+      - name: Checkout main (isolated from release branch)
+        uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      # Critical: node_modules must exist for `next upgrade --agent=security`.
+      - name: Install dependencies (node_modules required)
+        run: npm ci --no-audit --no-fund
+
+      - name: Audit npm advisories
+        id: audit
+        run: npm audit --audit-level=moderate --json > audit.json || true
+
+      - name: Report vulnerabilities (artifact)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: security-audit-${{ github.run_id }}
+          path: audit.json
+          retention-days: 14
+
+      - name: Next version baseline
+        run: |
+          echo "Next version: $(node -p 'require("next/package.json").version')"
+
+      # `next upgrade --agent` is an agentic HANDOFF: it prints version-matched
+      # instructions for a coding agent and does NOT edit files itself. Capture
+      # that guidance as an artifact rather than claiming an auto-fix happened.
+      - name: Generate upgrade guidance (agentic handoff)
+        id: fix
+        if: inputs.fix == true || inputs.fix == 'true'
+        run: |
+          npx next upgrade --agent=security > upgrade-guidance.txt 2>&1 || true
+          cat upgrade-guidance.txt
+
+      - name: Upload upgrade guidance (artifact)
+        if: steps.fix.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: upgrade-guidance-${{ github.run_id }}
+          path: upgrade-guidance.txt
+          retention-days: 14
+
+      # Only reinstall when a real dependency change landed on the branch.
+      - name: Reinstall only if dependency files changed
+        if: steps.fix.outcome == 'success'
+        run: |
+          if git diff --quiet -- package.json package-lock.json; then
+            echo "No dependency changes to reinstall."
+          else
+            npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+          fi
+
+      # Isolation: stage a real fix on a dedicated branch, NOT main.
+      - name: Create security-fix branch (isolated from release line)
+        if: success() && steps.fix.outcome == 'success'
+        run: |
+          if git diff --quiet -- package.json package-lock.json; then
+            echo "No dependency changes were applied; skipping branch creation."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="security/auto-fix-$(date +%Y%m%d)"
+          git checkout -b "$BRANCH" || { echo "Branch checkout failed"; exit 1; }
+          git add package.json package-lock.json || true
+          git diff --cached --quiet || git commit -m "security(auto): weekly vulnerability fix $(date -I)" || true
+          git push origin "$BRANCH" || { echo "Branch push skipped (no changes / permissions)"; exit 1; }
+
+      # Verification gate (lint + build). Fails the workflow if broken — this is
+      # what keeps the release line clean. Only apply the fix once verified.
+      - name: Lint
+        run: npm run lint
+
+      - name: Build (static generation verification)
+        env:
+          APP_NAME: dental-atelier
+          NEXT_PUBLIC_APP_NAME: dental-atelier
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+        run: npm run build
+
+      - name: Report status
+        if: always()
+        run: |
+          echo "=== Weekly Security Status ==="
+          echo "Audit step: ${{ steps.audit.outcome }}"
+          echo "Fix step: ${{ steps.fix.outcome }}"
+          echo "Lint/build verification: requires PASS before any merge to main"
+          echo "Changes detected: $(git diff HEAD --stat | tail -c 200 || echo none)"

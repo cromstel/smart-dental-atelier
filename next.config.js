@@ -40,6 +40,12 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
 
+  // Security policy for `next upgrade --agent`: keep advisory reminders active
+  // so the next vulnerable version is flagged during dev/build.
+  experimental: {
+    agentUpgrade: 'security',
+  },
+
   // Emits .next/standalone with a pruned server and only the traced
   // dependencies, which is what the Dockerfile's runner stage copies.
   // Required for the `output: 'standalone'` runtime image.

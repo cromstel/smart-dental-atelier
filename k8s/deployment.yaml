@@ -44,11 +44,16 @@ data:
   # Empty means same-origin only.
   ALLOWED_ORIGINS: ''
   # Mail transport. The credentials live in the Secret, not here.
+  # SMTP_FROM is an address (not a secret) and MUST be set when SMTP is enabled:
+  # the mailer refuses to send from an uncontrolled/default sender.
   SMTP_PROVIDER: ''
   SMTP_HOST: ''
   SMTP_PORT: ''
   SMTP_FROM: ''
   NOTIFY_EMAIL: ''
+  # Brand shown in the chrome and content. Override to rebrand a deployment.
+  BRAND_NAME: ''
+  NEXT_PUBLIC_BRAND_NAME: ''
   # Where the transcoded gallery images are written.
   GALLERY_STORAGE_DIR: 'public/uploads'
   # The studio's schedule.

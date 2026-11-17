@@ -67,7 +67,9 @@ const port = String(
 );
 const user = setting('SMTP_USER') || '';
 const password = setting('SMTP_PASSWORD') || '';
-const from = setting('SMTP_FROM') || user;
+// The mailer no longer falls back to SMTP_USER: sending from an address the
+// deployment does not control breaks SPF/DMARC. SMTP_FROM must be explicit.
+const from = setting('SMTP_FROM') || '';
 // `deliver()` falls back to `SITE.email` when NOTIFY_EMAIL is unset. The
 // site settings live in the database here, so the fallback is not always
 // readable — but the check must not report a false failure either.
@@ -88,6 +90,10 @@ if (!host || !port) {
 }
 if (!user || !password) {
   bad('SMTP_USER and SMTP_PASSWORD must be set.');
+  process.exit(1);
+}
+if (!from) {
+  bad('SMTP_FROM must be set (the mailer refuses to send from an uncontrolled sender).');
   process.exit(1);
 }
 if (!to) {
