@@ -1,10 +1,19 @@
 {
   "schema_version": "ecc.agent-architecture-audit.report.v1",
   "audit_date": "2026-11-22",
+  "report_status": "pre-fix snapshot with remediation tracking; findings describe the tree at audit time, not necessarily the current HEAD",
+  "remediation": [
+    {
+      "finding": "F1",
+      "status": "remediated",
+      "commit": "fix/newsletter-double-opt-in",
+      "note": "Double opt-in now sends a real confirmation email from lib/mailer, activates only via POST /api/newsletter/confirm after a deliberate button press on /newsletter/confirm, rotates the capability token on every state change, and renders NewsletterSignup in the footer. E-mail delivery failures are surfaced instead of reported as success."
+    }
+  ],
   "executive_verdict": {
-    "overall_health": "high_risk",
+    "overall_health_at_audit_time": "high_risk",
     "primary_failure_mode": "The documentation and claim layer is ahead of the runtime layer: several features are described as working (double opt-in, content editor, map facade, auto-fix) but are stubs, dead code, or no-ops.",
-    "most_urgent_fix": "Wire the newsletter flow to real confirmation (consent/compliance exposure), then decide whether the admin Content Editor drives rendered content or remove the claim."
+    "most_urgent_fix": "Wire the newsletter flow to real confirmation (consent/compliance exposure) — see remediation above — then decide whether the admin Content Editor drives rendered content or remove the claim."
   },
   "scope": {
     "target_name": "smart-dental-atelier",
@@ -35,6 +44,7 @@
     {
       "id": "F1",
       "severity": "critical",
+      "status": "remediated — see the remediation array at the top of this report",
       "title": "Newsletter double opt-in is a no-op; unverified addresses stored as active",
       "mechanism": "The API logs a confirmation token to stdout instead of sending it, never sets confirmedAt, and the signup UI component is never imported by a page.",
       "source_layer": "claim-vs-persistence drift",
@@ -138,14 +148,14 @@
     },
     {
       "id": "F8",
-      "severity": "medium",
-      "title": "Operator precedence bug in getPageSeo noIndex calculation",
-      "mechanism": "Boolean(page?.noIndex) || key === 'home' ? Boolean(page?.noIndex) : false collapses to Boolean(page?.noIndex), making the home branch dead.",
-      "source_layer": "logic defect",
-      "root_cause": "Missing parentheses around the OR condition.",
+      "severity": "low",
+      "title": "Redundant logic in getPageSeo noIndex calculation (no demonstrated behaviour defect)",
+      "mechanism": "The expression parses as (Boolean(page?.noIndex) || key === 'home') ? Boolean(page?.noIndex) : false, which evaluates to Boolean(page?.noIndex) for every input. Both branches return the same value, so parentheses would not change the result and no input is known to violate the intended policy.",
+      "source_layer": "readability / redundant logic",
+      "root_cause": "The conditional repeats a value already computed in its test; the intended noindex policy was never specified, so a behaviour change cannot be justified from this expression alone.",
       "evidence_refs": ["lib/cms.js:164"],
       "confidence": 1.0,
-      "recommended_fix": "Parenthesize the intended condition or simplify with explicit intent."
+      "recommended_fix": "Simplify to Boolean(page?.noIndex) as a readability cleanup, or first document the intended noindex rule and give a concrete input that violates it before treating this as a bug."
     },
     {
       "id": "F9",
@@ -224,7 +234,7 @@
     { "order": 2, "goal": "Connect admin content edits to rendering; implement or delete PageBlock", "why_now": "Admin edits currently have no effect", "expected_effect": "The CMS becomes real" },
     { "order": 3, "goal": "Implement the map facade or remove the performance/privacy claim", "why_now": "False LCP/privacy claim", "expected_effect": "Honest docs, lighter contact page" },
     { "order": 4, "goal": "Add an audit-log view to the admin dashboard", "why_now": "Trust/operability", "expected_effect": "Claim becomes verifiable" },
-    { "order": 5, "goal": "Fix getPageSeo precedence and remove duplicate FAQ JSON-LD", "why_now": "Concrete correctness and SEO bugs", "expected_effect": "Deterministic noindex and one structured-data block" },
+    { "order": 5, "goal": "Simplify redundant getPageSeo logic and remove duplicate FAQ JSON-LD", "why_now": "SEO correctness plus a readability cleanup (F8 is redundant logic, not a behaviour defect)", "expected_effect": "One structured-data block on /faqs and clearly documented noindex intent" },
     { "order": 6, "goal": "Add branded pages/500.js", "why_now": "User-facing consistency", "expected_effect": "No default Next error page" },
     { "order": 7, "goal": "Share the rate-limit store or reduce replicas to one", "why_now": "Live bypass risk", "expected_effect": "Limits behave as documented" },
     { "order": 8, "goal": "Add axe/Lighthouse to CI and reconcile test-strategy docs", "why_now": "Spec requirement unmet", "expected_effect": "Verifiable a11y/perf gate" },
