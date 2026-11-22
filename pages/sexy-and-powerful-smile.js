@@ -119,6 +119,5 @@ export default function SexyAndPowerfulSmilePage({ settings = SITE, seo = {} }) 
 export async function getStaticProps() {
   const settings = await getSettings();
   const seo = await getPageSeo('/sexy-and-powerful-smile', settings);
-  if (!seo.published) return { notFound: true, revalidate: 600 };
   return { props: { settings, seo }, revalidate: 600 };
 }

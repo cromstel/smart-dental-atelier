@@ -78,6 +78,5 @@ export async function getStaticProps() {
   const products = await getServices('product');
   const settings = await getSettings();
   const seo = await getPageSeo('/products-and-materials', settings);
-  if (!seo.published) return { notFound: true, revalidate: 300 };
   return { props: serializeDates({ products, settings, seo }), revalidate: 300 };
 }

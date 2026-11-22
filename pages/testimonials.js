@@ -83,6 +83,5 @@ export async function getStaticProps() {
   const testimonials = await getTestimonials();
   const settings = await getSettings();
   const seo = await getPageSeo('/testimonials', settings);
-  if (!seo.published) return { notFound: true, revalidate: 300 };
   return { props: serializeDates({ testimonials, settings, seo }), revalidate: 300 };
 }

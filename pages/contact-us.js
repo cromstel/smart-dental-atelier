@@ -160,6 +160,5 @@ export default function ContactPage({ settings = SITE, seo = {} }) {
 export async function getStaticProps() {
   const settings = await getSettings();
   const seo = await getPageSeo('/contact-us', settings);
-  if (!seo.published) return { notFound: true, revalidate: 600 };
   return { props: serializeDates({ settings, seo }), revalidate: 600 };
 }

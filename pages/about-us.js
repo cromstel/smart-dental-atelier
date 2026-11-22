@@ -173,6 +173,5 @@ export async function getStaticProps() {
   ]);
   const settings = await getSettings();
   const seo = await getPageSeo('/about-us', settings);
-  if (!seo.published) return { notFound: true, revalidate: 600 };
   return { props: serializeDates({ milestones, labGallery, settings, seo }), revalidate: 600 };
 }

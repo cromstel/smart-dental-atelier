@@ -64,7 +64,11 @@ export default function AdminContentPage({ pages = [] }) {
       }
 
       setStatus('success');
-      setMessage('Saved. The public page has been revalidated.');
+      setMessage(
+        data.revalidated
+          ? 'Saved. The public page has been revalidated.'
+          : 'Saved, but the cached page could not be refreshed immediately; it will update at the next scheduled rebuild.',
+      );
       router.replace(router.asPath, undefined, { scroll: false });
     } catch {
       setStatus('error');

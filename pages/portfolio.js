@@ -108,6 +108,5 @@ export async function getStaticProps() {
 
   const settings = await getSettings();
   const seo = await getPageSeo('/portfolio', settings);
-  if (!seo.published) return { notFound: true, revalidate: 300 };
   return { props: serializeDates({ before, after, gallery, settings, seo }), revalidate: 300 };
 }

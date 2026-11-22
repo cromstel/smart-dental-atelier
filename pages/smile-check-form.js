@@ -87,6 +87,5 @@ export async function getStaticProps() {
   const questions = await getSmileCheckQuestions();
   const settings = await getSettings();
   const seo = await getPageSeo('/smile-check-form', settings);
-  if (!seo.published) return { notFound: true, revalidate: 600 };
   return { props: serializeDates({ questions, settings, seo }), revalidate: 600 };
 }

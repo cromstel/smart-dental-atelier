@@ -35,7 +35,7 @@ export default function Seo({
       <meta property="og:title" content={pageTitle(meta.title)} />
       <meta property="og:description" content={meta.description} />
       <meta property="og:url" content={meta.url} />
-      <meta property="og:image" content={`${SITE.url}${meta.image}`} />
+      <meta property="og:image" content={meta.image} />
       <meta property="og:image:alt" content={`${SITE.name} — ${SITE.tagline}`} />
       <meta property="og:locale" content="en_GB" />
 
@@ -43,7 +43,7 @@ export default function Seo({
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={pageTitle(meta.title)} />
       <meta name="twitter:description" content={meta.description} />
-      <meta name="twitter:image" content={`${SITE.url}${meta.image}`} />
+      <meta name="twitter:image" content={meta.image} />
 
       {jsonLd ? (
         <script

@@ -121,6 +121,5 @@ export async function getStaticProps() {
   const services = await getServices('service');
   const settings = await getSettings();
   const seo = await getPageSeo('/services', settings);
-  if (!seo.published) return { notFound: true, revalidate: 300 };
   return { props: serializeDates({ services, settings, seo }), revalidate: 300 };
 }

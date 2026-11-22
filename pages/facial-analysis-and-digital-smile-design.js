@@ -166,6 +166,5 @@ export default function FacialAnalysisPage({ settings = SITE, seo = {} }) {
 export async function getStaticProps() {
   const settings = await getSettings();
   const seo = await getPageSeo('/facial-analysis-and-digital-smile-design', settings);
-  if (!seo.published) return { notFound: true, revalidate: 600 };
   return { props: { settings, seo }, revalidate: 600 };
 }

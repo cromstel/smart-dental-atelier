@@ -202,6 +202,5 @@ export async function getStaticProps() {
   const [{ testimonials }, gallery] = await Promise.all([getHomeData(), getGallery()]);
   const settings = await getSettings();
   const seo = await getPageSeo('/', settings);
-  if (!seo.published) return { notFound: true, revalidate: 300 };
   return { props: serializeDates({ testimonials, gallery, settings, seo }), revalidate: 300 };
 }

@@ -134,6 +134,5 @@ export default function ComfortAndSelfConfidencePage({ settings = SITE, seo = {}
 export async function getStaticProps() {
   const settings = await getSettings();
   const seo = await getPageSeo('/comfort-and-self-confidence', settings);
-  if (!seo.published) return { notFound: true, revalidate: 600 };
   return { props: { settings, seo }, revalidate: 600 };
 }
