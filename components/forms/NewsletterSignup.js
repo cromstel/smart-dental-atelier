@@ -16,7 +16,9 @@ export default function NewsletterSignup({
   endpoint = '/api/newsletter',
   source = 'footer',
   placeholder = 'Your e-mail address',
-  label = 'E-mail',
+  // Distinct from the contact/appointment forms on the same page: two inputs
+  // with the same accessible name are confusing for screen-reader users.
+  label = 'Newsletter address',
   submitLabel = 'Subscribe',
   className = '',
 }) {
@@ -67,7 +69,8 @@ export default function NewsletterSignup({
       <Honeypot value={form.values.website} onChange={form.handleChange} />
 
       <p className="mt-3 text-xs text-silver-600">
-        We e-mail a few times a year about new cases. Unsubscribe with one click, any time.
+        We e-mail a few times a year about new cases. We&apos;ll send a link to confirm first —
+        unsubscribe with one click, any time.
       </p>
     </form>
   );
