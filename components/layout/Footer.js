@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { SITE, NAV_ITEMS } from '@/lib/content';
 import { telHref } from '@/lib/format';
+import NewsletterSignup from '@/components/forms/NewsletterSignup';
 
 /**
  * Site footer with contact details, navigation and legal links.
@@ -109,6 +110,14 @@ export default function Footer({ contact = {}, copyright }) {
           >
             Request a free consultation
           </Link>
+        </div>
+
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-caps text-brand-300">Stay in touch</h2>
+          <p className="mt-4 text-sm leading-relaxed text-silver-400">
+            A few notes on new cases and smile design, once in a while.
+          </p>
+          <NewsletterSignup className="mt-4" />
         </div>
       </div>
 

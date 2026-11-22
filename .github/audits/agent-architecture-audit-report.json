@@ -1,0 +1,233 @@
+{
+  "schema_version": "ecc.agent-architecture-audit.report.v1",
+  "audit_date": "2026-11-22",
+  "executive_verdict": {
+    "overall_health": "high_risk",
+    "primary_failure_mode": "The documentation and claim layer is ahead of the runtime layer: several features are described as working (double opt-in, content editor, map facade, auto-fix) but are stubs, dead code, or no-ops.",
+    "most_urgent_fix": "Wire the newsletter flow to real confirmation (consent/compliance exposure), then decide whether the admin Content Editor drives rendered content or remove the claim."
+  },
+  "scope": {
+    "target_name": "smart-dental-atelier",
+    "app_type": "conventional Next.js Pages Router web application (not an agent/LLM system)",
+    "model_stack": [],
+    "agent_stack_applicable": false,
+    "agent_stack_note": "package.json has zero AI/LLM dependencies; no prompts, tool router, memory/vector store, or LLM calls exist. All 12 agent-stack layers are N/A.",
+    "layers_to_audit": [
+      "project scope vs implementation",
+      "feature completeness",
+      "claim-vs-runtime consistency",
+      "deployment topology assumptions"
+    ],
+    "scope_sources": [
+      "README.md",
+      "docs/Executive Summary.md",
+      "docs/WIKI.md",
+      "docs/IMPLEMENTATION_PLAN.md",
+      "docs/TODO.md",
+      "docs/PLAN.md",
+      "docs/MEMORY.md",
+      "docs/REVIEW-2026-10-24.md",
+      "docs/FRONTEND_ENHANCEMENT.md",
+      "git history (91 commits)"
+    ]
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "critical",
+      "title": "Newsletter double opt-in is a no-op; unverified addresses stored as active",
+      "mechanism": "The API logs a confirmation token to stdout instead of sending it, never sets confirmedAt, and the signup UI component is never imported by a page.",
+      "source_layer": "claim-vs-persistence drift",
+      "root_cause": "The confirmation step was designed but the mailer function, confirm endpoint, and UI wiring were never implemented.",
+      "evidence_refs": [
+        "pages/api/newsletter.js:68-83",
+        "lib/mailer.js",
+        "prisma/schema.prisma:364",
+        "components/forms/NewsletterSignup.js:15",
+        "grep 'NewsletterSignup|confirmedAt|newsletter/confirm' -> only the component self-reference"
+      ],
+      "confidence": 1.0,
+      "recommended_fix": "Wire to lib/mailer.js with a confirmation email, add GET /api/newsletter/confirm?token=, set confirmedAt and active only on confirmation, or remove the feature and its copy."
+    },
+    {
+      "id": "F2",
+      "severity": "critical",
+      "title": "Admin Content Editor edits data the public site never reads; PageBlock CMS dead",
+      "mechanism": "Admin pages write Page SEO fields, but public pages hardcode Seo props. getPageSeo is used only by the sitemap. PageBlock has no renderer, editor, API, or seed rows.",
+      "source_layer": "missing wiring between CMS persistence and rendering",
+      "root_cause": "The spec called for a WYSIWYG/markdown content editor; only an SEO-field editor was built and it was never connected to page rendering.",
+      "evidence_refs": [
+        "pages/admin/content.js",
+        "pages/api/admin/pages.js:44-53",
+        "pages/index.js:28-33",
+        "pages/about-us.js:24-30",
+        "lib/cms.js:154-164",
+        "pages/sitemap.xml.js:15",
+        "prisma/schema.prisma:235-255",
+        "lib/validation.js:163",
+        "docs/Executive Summary.md:367"
+      ],
+      "confidence": 1.0,
+      "recommended_fix": "Consume getPageSeo(slug) in public pages, and either implement a PageBlock renderer/editor or delete the dead schema and the WYSIWYG claim."
+    },
+    {
+      "id": "F3",
+      "severity": "high",
+      "title": "Google Maps facade is not a facade",
+      "mechanism": "Both exported components render the Google iframe immediately; there is no state or click handler despite the doc comment promising click-to-load.",
+      "source_layer": "claim-vs-runtime drift",
+      "root_cause": "The facade pattern was documented but never implemented.",
+      "evidence_refs": [
+        "components/marketing/GoogleMapEmbed.js:3-9",
+        "components/marketing/GoogleMapEmbed.js:33-65"
+      ],
+      "confidence": 1.0,
+      "recommended_fix": "Implement useState + click-to-load, or remove the performance/privacy comment."
+    },
+    {
+      "id": "F4",
+      "severity": "high",
+      "title": "Audit trail is write-only; no UI to view it",
+      "mechanism": "AdminShell claims all actions are recorded, but no page calls /api/admin/audit and the dashboard renders no entries.",
+      "source_layer": "missing consumer",
+      "root_cause": "The audit API was built with a 'dashboard footer' intention that was never implemented.",
+      "evidence_refs": [
+        "components/admin/AdminShell.js:146",
+        "pages/api/admin/audit.js:5-6",
+        "pages/admin/index.js"
+      ],
+      "confidence": 1.0,
+      "recommended_fix": "Add an audit view to the admin dashboard using the existing endpoint."
+    },
+    {
+      "id": "F5",
+      "severity": "high",
+      "title": "In-memory rate limiter deployed with 2 replicas",
+      "mechanism": "Per-process buckets are not shared, so effective limits are inconsistent and bypassable by distributing requests.",
+      "source_layer": "single-instance assumption vs deployment topology",
+      "root_cause": "The in-memory limiter was designed for one process; K8s sets replicas: 2 and HPA minReplicas: 2.",
+      "evidence_refs": [
+        "lib/api.js:282-328",
+        "k8s/deployment.yaml",
+        "docs/TODO.md:93-95"
+      ],
+      "confidence": 0.95,
+      "recommended_fix": "Use a shared store or edge rule, or run a single replica and document the constraint."
+    },
+    {
+      "id": "F6",
+      "severity": "medium",
+      "title": "No branded server-error page",
+      "mechanism": "404 is branded but a 500 falls through to the Next default page.",
+      "source_layer": "missing module",
+      "root_cause": "Never built though a branded 404 exists.",
+      "evidence_refs": ["pages/404.js", "pages/500.js absent", "pages/_error.js absent"],
+      "confidence": 1.0,
+      "recommended_fix": "Add pages/500.js using the branded 404 as a template."
+    },
+    {
+      "id": "F7",
+      "severity": "medium",
+      "title": "Duplicate FAQPage JSON-LD on /faqs",
+      "mechanism": "The page and the accordion each inject FAQPage structured data for the same content.",
+      "source_layer": "duplicate emission",
+      "root_cause": "Two independent implementations of the same SEO feature.",
+      "evidence_refs": ["pages/faqs.js:35-38", "components/marketing/FAQAccordion.js:117-122"],
+      "confidence": 1.0,
+      "recommended_fix": "Emit from one location only."
+    },
+    {
+      "id": "F8",
+      "severity": "medium",
+      "title": "Operator precedence bug in getPageSeo noIndex calculation",
+      "mechanism": "Boolean(page?.noIndex) || key === 'home' ? Boolean(page?.noIndex) : false collapses to Boolean(page?.noIndex), making the home branch dead.",
+      "source_layer": "logic defect",
+      "root_cause": "Missing parentheses around the OR condition.",
+      "evidence_refs": ["lib/cms.js:164"],
+      "confidence": 1.0,
+      "recommended_fix": "Parenthesize the intended condition or simplify with explicit intent."
+    },
+    {
+      "id": "F9",
+      "severity": "medium",
+      "title": "Spec-recommended accessibility/performance audits and DB integration tests absent",
+      "mechanism": "The spec requests axe/Lighthouse and Supertest/MySQL integration tests; the suite is Jest with mocked API handlers plus Playwright, with no a11y/perf CI gate.",
+      "source_layer": "verification gap",
+      "root_cause": "Local-only test policy plus no audit tooling in CI.",
+      "evidence_refs": ["docs/Executive Summary.md:441-445", "tests/", ".github/workflows/ci.yml"],
+      "confidence": 0.9,
+      "recommended_fix": "Add axe/Lighthouse to CI and reconcile the test-strategy docs with the local-only suite policy."
+    },
+    {
+      "id": "F10",
+      "severity": "medium",
+      "title": "Scope docs are untracked and contain 17 contradictions",
+      "mechanism": "git ls-files docs returns 0; README points to the untracked spec. Roles, port, framework versions, test counts, and route counts disagree across docs.",
+      "source_layer": "documentation governance",
+      "root_cause": "docs/ was deliberately untracked in commit 124b7a1 while remaining the authoritative source for audits.",
+      "evidence_refs": [
+        ".gitignore:79",
+        "README.md:204",
+        "docs/Executive Summary.md:146 vs README.md:340",
+        "docs/WIKI.md:11 vs README.md:99"
+      ],
+      "confidence": 1.0,
+      "recommended_fix": "Track the scope docs or inline the spec into tracked README; nominate one authoritative source and reconcile contradictions."
+    },
+    {
+      "id": "F11",
+      "severity": "low",
+      "title": "Security workflow does not auto-fix",
+      "mechanism": "next upgrade --agent=security prints guidance only; the fix branch requires a git diff that command never produces.",
+      "source_layer": "claim-vs-runtime drift",
+      "root_cause": "Workflow titled 'Scan -> Report -> Fix -> Verify' but fix step is inert.",
+      "evidence_refs": [".github/workflows/security.yml:61-68", ".github/workflows/security.yml:89-103"],
+      "confidence": 1.0,
+      "recommended_fix": "Rename the workflow to reflect report-only behavior or implement a real patch step."
+    },
+    {
+      "id": "F12",
+      "severity": "low",
+      "title": "K8s scheduled scale-to-zero is a comment only",
+      "mechanism": "Manifest describes scheduled scale-down but ships only an HPA with minReplicas: 2; no CronJob or KEDA.",
+      "source_layer": "claim-vs-runtime drift",
+      "root_cause": "Planned optimization never implemented.",
+      "evidence_refs": ["k8s/deployment.yaml:199-223"],
+      "confidence": 1.0,
+      "recommended_fix": "Implement a CronJob/KEDA ScaledObject or remove the comment."
+    },
+    {
+      "id": "F13",
+      "severity": "low",
+      "title": "Sitemap doc comment overstates coverage",
+      "mechanism": "Comment claims published service and FAQ URLs; implementation maps only 14 static PUBLIC_ROUTES.",
+      "source_layer": "claim-vs-runtime drift",
+      "root_cause": "Doc comment describes an intended extension.",
+      "evidence_refs": ["pages/sitemap.xml.js:5-9", "lib/seo.js:117-132"],
+      "confidence": 1.0,
+      "recommended_fix": "Generate the claimed URLs or correct the comment."
+    },
+    {
+      "id": "F14",
+      "severity": "low",
+      "title": "Hardcoded fallback copy and phone numbers bypass settings registry",
+      "mechanism": "Two pages use literal fallback text/phone instead of the env-driven settings layer.",
+      "source_layer": "configuration drift",
+      "root_cause": "Legacy copy retained.",
+      "evidence_refs": ["pages/smile-check-form.js:48-61", "pages/admin/index.js:39-45"],
+      "confidence": 1.0,
+      "recommended_fix": "Read from the settings registry with a documented fallback."
+    }
+  ],
+  "ordered_fix_plan": [
+    { "order": 1, "goal": "Wire newsletter confirmation (email + confirm endpoint + confirmedAt) or remove the feature", "why_now": "Consent/compliance exposure", "expected_effect": "No addresses stored on a false opt-in promise" },
+    { "order": 2, "goal": "Connect admin content edits to rendering; implement or delete PageBlock", "why_now": "Admin edits currently have no effect", "expected_effect": "The CMS becomes real" },
+    { "order": 3, "goal": "Implement the map facade or remove the performance/privacy claim", "why_now": "False LCP/privacy claim", "expected_effect": "Honest docs, lighter contact page" },
+    { "order": 4, "goal": "Add an audit-log view to the admin dashboard", "why_now": "Trust/operability", "expected_effect": "Claim becomes verifiable" },
+    { "order": 5, "goal": "Fix getPageSeo precedence and remove duplicate FAQ JSON-LD", "why_now": "Concrete correctness and SEO bugs", "expected_effect": "Deterministic noindex and one structured-data block" },
+    { "order": 6, "goal": "Add branded pages/500.js", "why_now": "User-facing consistency", "expected_effect": "No default Next error page" },
+    { "order": 7, "goal": "Share the rate-limit store or reduce replicas to one", "why_now": "Live bypass risk", "expected_effect": "Limits behave as documented" },
+    { "order": 8, "goal": "Add axe/Lighthouse to CI and reconcile test-strategy docs", "why_now": "Spec requirement unmet", "expected_effect": "Verifiable a11y/perf gate" },
+    { "order": 9, "goal": "Track scope docs and reconcile the 17 contradictions", "why_now": "Fresh clones lose the spec", "expected_effect": "Auditable, reproducible scope" }
+  ]
+}
