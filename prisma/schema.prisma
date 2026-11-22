@@ -4,7 +4,7 @@
 // Models follow the inventory in the Executive Summary and extend it with the
 // pieces the two portals actually need:
 //
-//   * Page / PageBlock  -> "Content Editor" for the marketing pages
+//   * Page              -> per-page SEO metadata and visibility for marketing pages
 //   * Service            -> Products & Materials + Services pages
 //   * Appointment        -> client booking + admin calendar
 //   * ContactMessage     -> every public form, discriminated by `source`
@@ -227,31 +227,7 @@ model Page {
   updatedAt   DateTime @updatedAt
   createdAt   DateTime @default(now())
 
-  blocks PageBlock[]
-
   @@index([published])
-}
-
-model PageBlock {
-  id        Int      @id @default(autoincrement())
-  pageId    Int
-  /// Layout key the renderer switches on: hero | rich-text | cards | gallery |
-  /// faq-accordion | contact-form | cta | testimonial-slider | map | smile-check.
-  type      String
-  /// Position within the page.
-  position  Int      @default(0)
-  title     String?
-  subtitle  String?
-  body      String?  @db.Text
-  /// JSON payload for structured blocks (image lists, button pairs, ...).
-  data      Json?
-  published Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
-
-  @@index([pageId, position])
 }
 
 model Service {

@@ -9,7 +9,7 @@ import Timeline from '@/components/marketing/Timeline';
 import ImageGallery from '@/components/marketing/ImageGallery';
 import CtaBanner, { InlineCta } from '@/components/marketing/CtaBanner';
 import { COURSES, SITE } from '@/lib/content';
-import { getGallery, getMilestones, getSettings } from '@/lib/cms';
+import { getGallery, getMilestones, getSettings, getPageSeo } from '@/lib/cms';
 import { serializeDates } from '@/lib/serialize';
 import { breadcrumbJsonLd, organisationJsonLd, jsonLdScript } from '@/lib/seo';
 
@@ -18,19 +18,20 @@ const BREADCRUMBS = [
   { label: 'About Us' },
 ];
 
-export default function AboutPage({ milestones = [], labGallery = [], settings = SITE }) {
+export default function AboutPage({ milestones = [], labGallery = [], settings = SITE, seo = {} }) {
   return (
     <Layout contact={settings}>
       <Seo
-        title="About – Dental Atelier"
-        description="Dental Atelier is here to empower you to live a healthy, happy life with a peace of mind. Meet Michal Siakel, our director, and read about our latest courses and mission."
+        title={seo.title}
+        description={seo.description}
+        image={seo.image}
+        noIndex={seo.noIndex}
         pathname="/about-us"
-        image="/images/lab-3.webp"
         jsonLd={breadcrumbJsonLd(BREADCRUMBS)}
       />
 
       <PageHeader
-        title="About Dental Atelier"
+        title={seo.heading || 'About Dental Atelier'}
         subtitle="Dental Atelier is here to empower you to live a healthy, happy life with a peace of mind."
         breadcrumbs={BREADCRUMBS}
       >
@@ -171,5 +172,7 @@ export async function getStaticProps() {
     getGallery({ category: 'lab' }),
   ]);
   const settings = await getSettings();
-  return { props: serializeDates({ milestones, labGallery, settings }), revalidate: 600 };
+  const seo = await getPageSeo('/about-us', settings);
+  if (!seo.published) return { notFound: true, revalidate: 600 };
+  return { props: serializeDates({ milestones, labGallery, settings, seo }), revalidate: 600 };
 }

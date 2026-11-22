@@ -64,7 +64,7 @@ export default function AdminContentPage({ pages = [] }) {
       }
 
       setStatus('success');
-      setMessage('Saved. The change appears after the page is revalidated (usually within a minute).');
+      setMessage('Saved. The public page has been revalidated.');
       router.replace(router.asPath, undefined, { scroll: false });
     } catch {
       setStatus('error');
@@ -270,7 +270,7 @@ export async function getServerSideProps(ctx) {
       title: row.title,
       description: row.description,
       heading: row.heading || page.heading,
-      image: row.image,
+      image: row.image || page.image || '',
       noIndex: row.noIndex,
       published: row.published,
       updatedAt: row.updatedAt,

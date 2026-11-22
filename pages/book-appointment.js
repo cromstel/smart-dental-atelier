@@ -5,7 +5,7 @@ import PrimaryButton from '@/components/ui/PrimaryButton';
 import { PageHeader } from '@/components/marketing/HeroSection';
 import AppointmentForm from '@/components/forms/AppointmentForm';
 import { SITE } from '@/lib/content';
-import { getServices, getSettings } from '@/lib/cms';
+import { getServices, getSettings, getPageSeo } from '@/lib/cms';
 import { serializeDates } from '@/lib/serialize';
 import { breadcrumbJsonLd } from '@/lib/seo';
 import { telHref } from '@/lib/format';
@@ -15,18 +15,20 @@ const BREADCRUMBS = [
   { label: 'Book an appointment' },
 ];
 
-export default function BookAppointmentPage({ services = [], timeZone = '', durationMinutes = 0, settings = SITE }) {
+export default function BookAppointmentPage({ services = [], timeZone = '', durationMinutes = 0, settings = SITE, seo = {} }) {
   return (
     <Layout contact={settings}>
       <Seo
-        title="Book an appointment"
-        description="Request a free consultation, a custom colour shading appointment or a digital smile design session at Dental Atelier in Uccle, Brussels."
+        title={seo.title}
+        description={seo.description}
+        image={seo.image}
+        noIndex={seo.noIndex}
         pathname="/book-appointment"
         jsonLd={breadcrumbJsonLd(BREADCRUMBS)}
       />
 
       <PageHeader
-        title="Book an appointment"
+        title={seo.heading || 'Book an appointment'}
         subtitle="Consultations are free. Pick a preferred day and we will call you to confirm the exact time."
         breadcrumbs={BREADCRUMBS}
       />
@@ -102,10 +104,13 @@ export async function getStaticProps() {
   const products = await getServices('product');
   const services = await getServices('service');
   const settings = await getSettings();
+  const seo = await getPageSeo('/book-appointment', settings);
+  if (!seo.published) return { notFound: true, revalidate: 600 };
   return {
     props: serializeDates({
       services: [...products, ...services],
       settings,
+      seo,
       // The studio's timezone and slot length come from the environment, so the
       // booking page always describes the real schedule.
       timeZone: process.env.APPOINTMENT_TIME_ZONE || '',

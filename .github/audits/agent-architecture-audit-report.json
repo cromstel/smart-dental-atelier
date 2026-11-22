@@ -8,6 +8,12 @@
       "status": "remediated",
       "commit": "fix/newsletter-double-opt-in",
       "note": "Double opt-in now sends a real confirmation email from lib/mailer, activates only via POST /api/newsletter/confirm after a deliberate button press on /newsletter/confirm, rotates the capability token on every state change, and renders NewsletterSignup in the footer. E-mail delivery failures are surfaced instead of reported as success. Migration 20261122230000_newsletter_legacy_pending deactivates legacy rows that were created active=true with confirmedAt=null, so they cannot bypass the new flow."
+    },
+    {
+      "finding": "F2",
+      "status": "remediated",
+      "commit": "fix/content-editor-wiring",
+      "note": "Every public page now passes getPageSeo(slug, settings) into <Seo> and uses the admin heading for its H1; getPageSeo resolves route-to-key mismatches, falls back to bundled per-page images, returns published/noIndex, and no longer contains the F8 tautology. 'published: false' returns 404. The dead PageBlock model, validation schema, cms include, comments and doc claims were removed via migration 20261123120000_remove_page_blocks. The tracked README and admin nav now describe an SEO/visibility editor, matching the scope the code already documented."
     }
   ],
   "executive_verdict": {
@@ -62,6 +68,7 @@
     {
       "id": "F2",
       "severity": "critical",
+      "status": "remediated — see the remediation array at the top of this report",
       "title": "Admin Content Editor edits data the public site never reads; PageBlock CMS dead",
       "mechanism": "Admin pages write Page SEO fields, but public pages hardcode Seo props. getPageSeo is used only by the sitemap. PageBlock has no renderer, editor, API, or seed rows.",
       "source_layer": "missing wiring between CMS persistence and rendering",

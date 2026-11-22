@@ -5,7 +5,7 @@ import Section from '@/components/ui/Section';
 import { PageHeader } from '@/components/marketing/HeroSection';
 import SmileCheckForm from '@/components/forms/SmileCheckForm';
 import { SITE } from '@/lib/content';
-import { getSettings, getSmileCheckQuestions } from '@/lib/cms';
+import { getSettings, getSmileCheckQuestions, getPageSeo } from '@/lib/cms';
 import { serializeDates } from '@/lib/serialize';
 import { breadcrumbJsonLd } from '@/lib/seo';
 
@@ -14,19 +14,20 @@ const BREADCRUMBS = [
   { label: 'Smile check form' },
 ];
 
-export default function SmileCheckFormPage({ questions = [], settings = SITE }) {
+export default function SmileCheckFormPage({ questions = [], settings = SITE, seo = {} }) {
   return (
     <Layout contact={settings}>
       <Seo
-        title="Smile check form"
-        description="Answer eleven short questions about your teeth and find out what bothers you about your smile — then request a free consultation."
+        title={seo.title}
+        description={seo.description}
+        image={seo.image}
+        noIndex={seo.noIndex}
         pathname="/smile-check-form"
-        image="/images/smile-check-1.webp"
         jsonLd={breadcrumbJsonLd(BREADCRUMBS)}
       />
 
       <PageHeader
-        title="Ready for your smile check?"
+        title={seo.heading || 'Ready for your smile check?'}
         subtitle="Look in the mirror, give yourself a big smile and tell us what you would change if possible. Find out what bothers you."
         breadcrumbs={BREADCRUMBS}
       >
@@ -85,5 +86,7 @@ export default function SmileCheckFormPage({ questions = [], settings = SITE }) 
 export async function getStaticProps() {
   const questions = await getSmileCheckQuestions();
   const settings = await getSettings();
-  return { props: serializeDates({ questions, settings }), revalidate: 600 };
+  const seo = await getPageSeo('/smile-check-form', settings);
+  if (!seo.published) return { notFound: true, revalidate: 600 };
+  return { props: serializeDates({ questions, settings, seo }), revalidate: 600 };
 }

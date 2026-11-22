@@ -1,5 +1,5 @@
 import { PUBLIC_ROUTES } from '@/lib/seo';
-import { getPageSeo } from '@/lib/cms';
+import { getSettings } from '@/lib/cms';
 import { SITE } from '@/lib/content';
 
 /**
@@ -12,8 +12,8 @@ export default function Sitemap() {
 }
 
 export async function getServerSideProps({ res }) {
-  const settings = await getPageSeo('/');
-  const base = (settings.site?.url || SITE.url).replace(
+  const settings = await getSettings();
+  const base = (settings.url || SITE.url).replace(
     /\/$/,
     '',
   );

@@ -9,7 +9,7 @@ import TestimonialsSlider from '@/components/marketing/TestimonialsSlider';
 import ImageGallery from '@/components/marketing/ImageGallery';
 import CtaBanner from '@/components/marketing/CtaBanner';
 import { FEATURE_SECTIONS, SITE } from '@/lib/content';
-import { getGallery, getHomeData, getSettings } from '@/lib/cms';
+import { getGallery, getHomeData, getSettings, getPageSeo } from '@/lib/cms';
 import { serializeDates } from '@/lib/serialize';
 import { organisationJsonLd, jsonLdScript } from '@/lib/seo';
 
@@ -20,16 +20,17 @@ import { organisationJsonLd, jsonLdScript } from '@/lib/seo';
  * intro panel, and the testimonial carousel — plus SEO/OG tags and real alt
  * text that the original had none of.
  */
-export default function HomePage({ testimonials = [], gallery = [], settings = SITE }) {
+export default function HomePage({ testimonials = [], gallery = [], settings = SITE, seo = {} }) {
   const smileGallery = gallery.filter((image) => image.category === 'smile').slice(0, 6);
 
   return (
     <Layout contact={settings}>
       <Seo
-        title="A state-of-the-art laboratory"
-        description="Dental Atelier is a state-of-the-art dental laboratory in Brussels. Ceramics, veneers, crowns and bridges designed from facial analysis and digital smile design."
+        title={seo.title}
+        description={seo.description}
+        image={seo.image}
+        noIndex={seo.noIndex}
         pathname="/"
-        image="/images/hero-sexy.webp"
         jsonLd={organisationJsonLd(settings)}
       >
         <meta property="og:locale" content="en_GB" />
@@ -56,7 +57,7 @@ export default function HomePage({ testimonials = [], gallery = [], settings = S
         <div className="container mx-auto flex min-h-[70vh] flex-col justify-center gap-6 py-24">
           <p className="text-xs font-semibold uppercase tracking-caps text-brand-400">{SITE.tagline}</p>
           <h1 className="max-w-4xl text-4xl leading-tight md:text-6xl">
-            Dental Atelier is here to empower you to live a healthy, happy life with a peace of mind.
+            {seo.heading || 'Dental Atelier is here to empower you to live a healthy, happy life with a peace of mind.'}
           </h1>
           <p className="max-w-2xl text-base leading-relaxed text-silver-300 md:text-lg">
             Just like a fingerprint, each smile is unique — so we give every patient an individual
@@ -200,5 +201,7 @@ export default function HomePage({ testimonials = [], gallery = [], settings = S
 export async function getStaticProps() {
   const [{ testimonials }, gallery] = await Promise.all([getHomeData(), getGallery()]);
   const settings = await getSettings();
-  return { props: serializeDates({ testimonials, gallery, settings }), revalidate: 300 };
+  const seo = await getPageSeo('/', settings);
+  if (!seo.published) return { notFound: true, revalidate: 300 };
+  return { props: serializeDates({ testimonials, gallery, settings, seo }), revalidate: 300 };
 }

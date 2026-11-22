@@ -9,7 +9,7 @@ import SectionHeading from '@/components/marketing/SectionHeading';
 import ImageGallery from '@/components/marketing/ImageGallery';
 import CtaBanner from '@/components/marketing/CtaBanner';
 import { breadcrumbJsonLd } from '@/lib/seo';
-import { getSettings } from '@/lib/cms';
+import { getSettings, getPageSeo } from '@/lib/cms';
 import { SITE } from '@/lib/content';
 
 const BREADCRUMBS = [
@@ -23,19 +23,20 @@ const GALLERY = [
   { url: '/images/smile-sexy-3.webp', altText: 'Ceramic implant crown replacing a missing front tooth', title: 'Implant crown' },
 ];
 
-export default function SexyAndPowerfulSmilePage({ settings = SITE }) {
+export default function SexyAndPowerfulSmilePage({ settings = SITE, seo = {} }) {
   return (
     <Layout contact={settings}>
       <Seo
-        title="Sexy & powerful smile"
-        description="How smile aesthetics affect confidence, what a positive smile line is, and how veneers and crowns can improve crooked, gapped or discoloured teeth in weeks instead of years."
+        title={seo.title}
+        description={seo.description}
+        image={seo.image}
+        noIndex={seo.noIndex}
         pathname="/sexy-and-powerful-smile"
-        image="/images/hero-sexy.webp"
         jsonLd={breadcrumbJsonLd(BREADCRUMBS)}
       />
 
       <PageHeader
-        title="Sexy and powerful smile"
+        title={seo.heading || 'Sexy and powerful smile'}
         subtitle="Your smile changes the way you look at yourself and the way you are seen by others around you."
         breadcrumbs={BREADCRUMBS}
       />
@@ -117,5 +118,7 @@ export default function SexyAndPowerfulSmilePage({ settings = SITE }) {
 
 export async function getStaticProps() {
   const settings = await getSettings();
-  return { props: { settings }, revalidate: 600 };
+  const seo = await getPageSeo('/sexy-and-powerful-smile', settings);
+  if (!seo.published) return { notFound: true, revalidate: 600 };
+  return { props: { settings, seo }, revalidate: 600 };
 }
