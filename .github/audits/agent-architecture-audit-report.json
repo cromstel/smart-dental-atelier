@@ -7,7 +7,7 @@
       "finding": "F1",
       "status": "remediated",
       "commit": "fix/newsletter-double-opt-in",
-      "note": "Double opt-in now sends a real confirmation email from lib/mailer, activates only via POST /api/newsletter/confirm after a deliberate button press on /newsletter/confirm, rotates the capability token on every state change, and renders NewsletterSignup in the footer. E-mail delivery failures are surfaced instead of reported as success."
+      "note": "Double opt-in now sends a real confirmation email from lib/mailer, activates only via POST /api/newsletter/confirm after a deliberate button press on /newsletter/confirm, rotates the capability token on every state change, and renders NewsletterSignup in the footer. E-mail delivery failures are surfaced instead of reported as success. Migration 20261122230000_newsletter_legacy_pending deactivates legacy rows that were created active=true with confirmedAt=null, so they cannot bypass the new flow."
     }
   ],
   "executive_verdict": {
