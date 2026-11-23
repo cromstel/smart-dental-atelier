@@ -6,7 +6,7 @@ import SectionHeading from '@/components/marketing/SectionHeading';
 import InfoCard from '@/components/marketing/InfoCard';
 import RequestInfoForm from '@/components/forms/RequestInfoForm';
 import { MATERIALS, SITE } from '@/lib/content';
-import { getServices, getSettings } from '@/lib/cms';
+import { getServices, getSettings, getPageSeo } from '@/lib/cms';
 import { serializeDates } from '@/lib/serialize';
 import { breadcrumbJsonLd } from '@/lib/seo';
 
@@ -15,19 +15,20 @@ const BREADCRUMBS = [
   { label: 'Products & Materials' },
 ];
 
-export default function ProductsAndMaterialsPage({ products = [], settings = SITE }) {
+export default function ProductsAndMaterialsPage({ products = [], settings = SITE, seo = {} }) {
   return (
     <Layout contact={settings}>
       <Seo
-        title="Products & Materials"
-        description="Facial analysis, diagnostic wax up, provisional crowns, crowns and bridges, implant solutions, inlays/onlays and veneers — all made with certified materials from leading manufacturers."
+        title={seo.title}
+        description={seo.description}
+        image={seo.image}
+        noIndex={seo.noIndex}
         pathname="/products-and-materials"
-        image="/images/lab-5.webp"
         jsonLd={breadcrumbJsonLd(BREADCRUMBS)}
       />
 
       <PageHeader
-        title="Products & Materials"
+        title={seo.heading || 'Products & Materials'}
         subtitle="Everything we fabricate, and what we fabricate it from."
         breadcrumbs={BREADCRUMBS}
       />
@@ -76,5 +77,6 @@ export default function ProductsAndMaterialsPage({ products = [], settings = SIT
 export async function getStaticProps() {
   const products = await getServices('product');
   const settings = await getSettings();
-  return { props: serializeDates({ products, settings }), revalidate: 300 };
+  const seo = await getPageSeo('/products-and-materials', settings);
+  return { props: serializeDates({ products, settings, seo }), revalidate: 300 };
 }

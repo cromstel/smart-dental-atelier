@@ -7,7 +7,7 @@ import SectionHeading from '@/components/marketing/SectionHeading';
 import { GoogleMapFacade } from '@/components/marketing/GoogleMapEmbed';
 import ContactForm from '@/components/forms/ContactForm';
 import { DIRECTIONS, SITE } from '@/lib/content';
-import { getSettings } from '@/lib/cms';
+import { getSettings, getPageSeo } from '@/lib/cms';
 import { serializeDates } from '@/lib/serialize';
 import { telHref } from '@/lib/format';
 import { breadcrumbJsonLd, organisationJsonLd } from '@/lib/seo';
@@ -17,7 +17,7 @@ const BREADCRUMBS = [
   { label: 'Contact Us' },
 ];
 
-export default function ContactPage({ settings = SITE }) {
+export default function ContactPage({ settings = SITE, seo = {} }) {
   // Contact details come from the admin Settings screen, falling back to the
   // values bundled in lib/content.js.
   const mobile = settings.mobile || SITE.mobile;
@@ -30,14 +30,16 @@ export default function ContactPage({ settings = SITE }) {
   return (
     <Layout contact={settings}>
       <Seo
-        title="Contact Us"
-        description={`Contact ${SITE.legalName}: ${(settings.address?.lines || SITE.address.lines).slice(0, 3).join(', ')}. Mobile ${settings.mobileDisplay || settings.mobile || SITE.mobileDisplay}, phone ${settings.phoneDisplay || settings.phone || SITE.phoneDisplay}.`}
+        title={seo.title}
+        description={seo.description}
+        image={seo.image}
+        noIndex={seo.noIndex}
         pathname="/contact-us"
         jsonLd={organisationJsonLd(settings)}
       />
 
       <PageHeader
-        title="Contact us"
+        title={seo.heading || 'Contact us'}
         subtitle="We reply to e-mail within one working day, and we answer the phone during opening hours."
         breadcrumbs={BREADCRUMBS}
       />
@@ -157,5 +159,6 @@ export default function ContactPage({ settings = SITE }) {
 
 export async function getStaticProps() {
   const settings = await getSettings();
-  return { props: serializeDates({ settings }), revalidate: 600 };
+  const seo = await getPageSeo('/contact-us', settings);
+  return { props: serializeDates({ settings, seo }), revalidate: 600 };
 }

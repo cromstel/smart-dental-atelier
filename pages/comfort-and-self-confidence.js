@@ -9,7 +9,7 @@ import SectionHeading from '@/components/marketing/SectionHeading';
 import ImageGallery from '@/components/marketing/ImageGallery';
 import CtaBanner from '@/components/marketing/CtaBanner';
 import { breadcrumbJsonLd } from '@/lib/seo';
-import { getSettings } from '@/lib/cms';
+import { getSettings, getPageSeo } from '@/lib/cms';
 import { SITE } from '@/lib/content';
 
 const BREADCRUMBS = [
@@ -23,19 +23,20 @@ const GALLERY = [
   { url: '/images/smile-comfort-3.webp', altText: 'Fully ceramic bridge in the lower jaw', title: 'Ceramic bridge' },
 ];
 
-export default function ComfortAndSelfConfidencePage({ settings = SITE }) {
+export default function ComfortAndSelfConfidencePage({ settings = SITE, seo = {} }) {
   return (
     <Layout contact={settings}>
       <Seo
-        title="Comfort & Self-confidence"
-        description="Chipping, discoloured fillings, gaps and worn enamel hold people back from smiling. Ceramic inlays, veneers and crowns are the easy solution."
+        title={seo.title}
+        description={seo.description}
+        image={seo.image}
+        noIndex={seo.noIndex}
         pathname="/comfort-and-self-confidence"
-        image="/images/hero-comfort.webp"
         jsonLd={breadcrumbJsonLd(BREADCRUMBS)}
       />
 
       <PageHeader
-        title="Comfort and self confidence"
+        title={seo.heading || 'Comfort and self confidence'}
         subtitle="A pleasant sunny smile takes you a further step towards appreciation by everybody around you."
         breadcrumbs={BREADCRUMBS}
       />
@@ -132,5 +133,6 @@ export default function ComfortAndSelfConfidencePage({ settings = SITE }) {
 
 export async function getStaticProps() {
   const settings = await getSettings();
-  return { props: { settings }, revalidate: 600 };
+  const seo = await getPageSeo('/comfort-and-self-confidence', settings);
+  return { props: { settings, seo }, revalidate: 600 };
 }

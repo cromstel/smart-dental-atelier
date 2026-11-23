@@ -8,7 +8,7 @@ import BeforeAfter from '@/components/marketing/BeforeAfter';
 import ImageGallery from '@/components/marketing/ImageGallery';
 import ContactForm from '@/components/forms/ContactForm';
 import { PORTFOLIO_BEFORE_AFTER, SITE } from '@/lib/content';
-import { getGallery, getSettings } from '@/lib/cms';
+import { getGallery, getSettings, getPageSeo } from '@/lib/cms';
 import { serializeDates } from '@/lib/serialize';
 import { breadcrumbJsonLd } from '@/lib/seo';
 import { telHref } from '@/lib/format';
@@ -18,21 +18,22 @@ const BREADCRUMBS = [
   { label: 'Portfolio' },
 ];
 
-export default function PortfolioPage({ before = [], after = [], gallery = [], settings = SITE }) {
+export default function PortfolioPage({ before = [], after = [], gallery = [], settings = SITE, seo = {} }) {
   const smileGallery = gallery.filter((image) => image.category === 'smile');
 
   return (
     <Layout contact={settings}>
       <Seo
-        title="Portfolio"
-        description="Before and after smile transformations produced by Dental Atelier: a wide array of products of superb quality and prime aesthetic value."
+        title={seo.title}
+        description={seo.description}
+        image={seo.image}
+        noIndex={seo.noIndex}
         pathname="/portfolio"
-        image="/images/after.webp"
         jsonLd={breadcrumbJsonLd(BREADCRUMBS)}
       />
 
       <PageHeader
-        title="Portfolio"
+        title={seo.heading || 'Portfolio'}
         subtitle={PORTFOLIO_BEFORE_AFTER.intro}
         breadcrumbs={BREADCRUMBS}
       />
@@ -106,5 +107,6 @@ export async function getStaticProps() {
   ]);
 
   const settings = await getSettings();
-  return { props: serializeDates({ before, after, gallery, settings }), revalidate: 300 };
+  const seo = await getPageSeo('/portfolio', settings);
+  return { props: serializeDates({ before, after, gallery, settings, seo }), revalidate: 300 };
 }

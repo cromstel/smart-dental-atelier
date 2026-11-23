@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/marketing/HeroSection';
 import FAQAccordion from '@/components/marketing/FAQAccordion';
 import ContactForm from '@/components/forms/ContactForm';
 import { SITE } from '@/lib/content';
-import { getFaqs, getSettings } from '@/lib/cms';
+import { getFaqs, getSettings, getPageSeo } from '@/lib/cms';
 import { serializeDates } from '@/lib/serialize';
 import { breadcrumbJsonLd, faqJsonLd, jsonLdScript } from '@/lib/seo';
 
@@ -23,12 +23,14 @@ const CATEGORY_LABELS = [
   { value: 'COST', label: 'Cost' },
 ];
 
-export default function FaqsPage({ faqs = [], settings = SITE }) {
+export default function FaqsPage({ faqs = [], settings = SITE, seo = {} }) {
   return (
     <Layout contact={settings}>
       <Seo
-        title="FAQs"
-        description="Answers about porcelain veneers, crowns, bridges, implant crowns, ceramic inlays, diagnostic wax up, digital smile design and treatment costs."
+        title={seo.title}
+        description={seo.description}
+        image={seo.image}
+        noIndex={seo.noIndex}
         pathname="/faqs"
         jsonLd={breadcrumbJsonLd(BREADCRUMBS)}
       >
@@ -39,7 +41,7 @@ export default function FaqsPage({ faqs = [], settings = SITE }) {
       </Seo>
 
       <PageHeader
-        title="FAQs"
+        title={seo.heading || 'FAQs'}
         subtitle="Definitions first, then the practical answers: what things cost, and whether you have to change your dentist."
         breadcrumbs={BREADCRUMBS}
       />
@@ -90,5 +92,6 @@ export default function FaqsPage({ faqs = [], settings = SITE }) {
 export async function getStaticProps() {
   const faqs = await getFaqs();
   const settings = await getSettings();
-  return { props: serializeDates({ faqs, settings }), revalidate: 300 };
+  const seo = await getPageSeo('/faqs', settings);
+  return { props: serializeDates({ faqs, settings, seo }), revalidate: 300 };
 }

@@ -1,26 +1,26 @@
 import { PUBLIC_ROUTES } from '@/lib/seo';
-import { getPageSeo } from '@/lib/cms';
-import { SITE } from '@/lib/content';
+import { getSettings, getUnpublishedPageKeys } from '@/lib/cms';
+import { SITE, pageKeyForRoute } from '@/lib/content';
 
 /**
- * GET /sitemap.xml — generated from the public route list plus every published
- * service and FAQ-driven page. Regenerated on request (cheap: one settings
- * read) so a newly published page appears without a redeploy.
+ * GET /sitemap.xml — generated from the public route list, minus any page
+ * whose "Published" checkbox is off. Regenerated on request so a newly
+ * published page appears without a redeploy.
  */
 export default function Sitemap() {
   return null; // all output comes from getServerSideProps
 }
 
 export async function getServerSideProps({ res }) {
-  const settings = await getPageSeo('/');
-  const base = (settings.site?.url || SITE.url).replace(
+  const [settings, unpublished] = await Promise.all([getSettings(), getUnpublishedPageKeys()]);
+  const base = (settings.url || SITE.url).replace(
     /\/$/,
     '',
   );
 
   const lastmod = new Date().toISOString().slice(0, 10);
 
-  const urls = PUBLIC_ROUTES.map(
+  const urls = PUBLIC_ROUTES.filter((route) => !unpublished.has(pageKeyForRoute(route.path))).map(
     (route) => `  <url>
     <loc>${base}${route.path}</loc>
     <lastmod>${lastmod}</lastmod>

@@ -37,7 +37,7 @@ This version keeps every page and every sentence, and adds:
 
 | Area | Legacy | Now |
 | --- | --- | --- |
-| Content | hard-coded HTML | editable from `/admin` |
+| Content | hard-coded HTML | long-form copy in components; SEO fields editable from `/admin` |
 | Appointments | not tracked | `Appointment` table + admin list |
 | Inquiries | emailed, then lost | `ContactMessage` inbox with statuses |
 | Testimonials | hard-coded carousel | managed records, reordered |
@@ -341,7 +341,7 @@ actually need:
 | `Account`, `Session`, `VerificationToken` | NextAuth-compatible (JWT strategy) |
 | `Appointment` | Requests with preferred date, type, status workflow |
 | `ContactMessage` | Every form, discriminated by `source` + `smileCheckAnswers` |
-| `Page`, `PageBlock` | Per-page SEO fields and optional content blocks |
+| `Page` | Per-page SEO fields and visibility |
 | `Service` | Products & Materials **and** Services catalogue |
 | `Faq`, `Testimonial`, `GalleryImage` | Editable public content |
 | `SmileCheckQuestion`, `DirectorMilestone` | Checklist and CV entries |
@@ -367,7 +367,7 @@ Image paths live in rows as well as in source — the gallery is seeded from
 `lib/content.js` and the OG image is a `Setting` — so the WebP conversion ships a
 data migration (`20261001190000_webp_image_paths`) that rewrites the extension in
 `GalleryImage.url`, `Service.image`, `Testimonial.image`, `Page.image`,
-`Setting.value` and `PageBlock.body`. Without it the database keeps pointing at
+`Setting.value` and `Page.image`. Without it the database keeps pointing at
 source files the image pipeline has deleted.
 
 ---
@@ -408,7 +408,7 @@ three purposes:
 1. the seed source for `prisma/seed.mjs`
 2. the fallback when MySQL is unreachable, so the marketing site still renders
    (and still builds) on a fresh clone or in CI without a database
-3. the canonical place for long-form page bodies
+3. the canonical place for long-form page bodies in the page components
 
 Once a `Service`, `Faq`, `Testimonial` or `GalleryImage` row exists, the
 database wins. `lib/cms.js` does that merge through `safeQuery`.

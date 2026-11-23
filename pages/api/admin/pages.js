@@ -63,7 +63,27 @@ export default apiHandler(async (req, res) => {
       payload: { slug: key },
     });
 
-    return res.status(200).json(page);
+    // The public page is statically generated, so a save must revalidate its
+    // ISR cache or the edit stays invisible until the next timed rebuild.
+    // The route and the admin key differ for two pages, so resolve it from
+    // the same PAGES inventory the editor uses.
+    const route = PAGES.find((entry) => entry.key === key)?.slug || `/${key}`;
+    const pathname = route === '/' ? '/' : `/${String(route).replace(/^\/+/, '')}`;
+    let revalidated = false;
+    if (typeof res.revalidate === 'function') {
+      try {
+        await res.revalidate(pathname);
+        revalidated = true;
+      } catch {
+        // On-demand revalidation is unavailable in dev or before a build;
+        // the timed revalidate window still picks the change up.
+      }
+    }
+
+    // The database write is complete either way; say plainly whether the
+    // cached public page was refreshed so the editor cannot claim more than
+    // actually happened.
+    return res.status(200).json({ ...page, revalidated });
   }
 
   return methodNotAllowed(res, ['GET', 'PUT']);

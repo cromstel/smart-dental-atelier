@@ -8,7 +8,7 @@ import RequestInfoForm from '@/components/forms/RequestInfoForm';
 import ImageGallery from '@/components/marketing/ImageGallery';
 import CtaBanner from '@/components/marketing/CtaBanner';
 import { breadcrumbJsonLd } from '@/lib/seo';
-import { getSettings } from '@/lib/cms';
+import { getSettings, getPageSeo } from '@/lib/cms';
 import { SITE } from '@/lib/content';
 
 const BREADCRUMBS = [
@@ -22,18 +22,20 @@ const PROCESS_GALLERY = [
   { url: '/images/smile-sexy-2.webp', altText: 'Digital smile design preview on a portrait photograph', title: 'Digital preview' },
 ];
 
-export default function FacialAnalysisPage({ settings = SITE }) {
+export default function FacialAnalysisPage({ settings = SITE, seo = {} }) {
   return (
     <Layout contact={settings}>
       <Seo
-        title="Facial analysis and Digital Smile Design"
-        description="We measure the biometrical features of your face, analyse it digitally and show you on your portrait photograph what your new smile will look like before treatment starts."
+        title={seo.title}
+        description={seo.description}
+        image={seo.image}
+        noIndex={seo.noIndex}
         pathname="/facial-analysis-and-digital-smile-design"
         jsonLd={breadcrumbJsonLd(BREADCRUMBS)}
       />
 
       <PageHeader
-        title="Facial analysis and Digital Smile Design"
+        title={seo.heading || 'Facial analysis and Digital Smile Design'}
         subtitle="An ideal smile is linked to certain biometrical features of your face."
         breadcrumbs={BREADCRUMBS}
       />
@@ -163,5 +165,6 @@ export default function FacialAnalysisPage({ settings = SITE }) {
 
 export async function getStaticProps() {
   const settings = await getSettings();
-  return { props: { settings }, revalidate: 600 };
+  const seo = await getPageSeo('/facial-analysis-and-digital-smile-design', settings);
+  return { props: { settings, seo }, revalidate: 600 };
 }

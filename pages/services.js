@@ -8,7 +8,7 @@ import SectionHeading from '@/components/marketing/SectionHeading';
 import InfoCard from '@/components/marketing/InfoCard';
 import CtaBanner from '@/components/marketing/CtaBanner';
 import { SITE } from '@/lib/content';
-import { getServices, getSettings } from '@/lib/cms';
+import { getServices, getSettings, getPageSeo } from '@/lib/cms';
 import { serializeDates } from '@/lib/serialize';
 import { breadcrumbJsonLd } from '@/lib/seo';
 import { toParagraphs } from '@/lib/format';
@@ -18,18 +18,13 @@ const BREADCRUMBS = [
   { label: 'Services' },
 ];
 
-export default function ServicesPage({ services = [], settings = SITE }) {
+export default function ServicesPage({ services = [], settings = SITE, seo = {} }) {
   return (
     <Layout contact={settings}>
-      <Seo
-        title="Services"
-        description="Price estimation, free consultation, custom colour shading, digital smile design, pick-up and delivery and diagnostic case planning at Dental Atelier, Brussels."
-        pathname="/services"
-        jsonLd={breadcrumbJsonLd(BREADCRUMBS)}
-      />
+      <Seo {...seo} pathname="/services" jsonLd={breadcrumbJsonLd(BREADCRUMBS)} />
 
       <PageHeader
-        title="Services"
+        title={seo.heading || 'Services'}
         subtitle="Price estimation, free consultation, custom colour shading, digital smile design, pick-up and delivery, consultation and diagnostic case planning."
         breadcrumbs={BREADCRUMBS}
       >
@@ -125,5 +120,6 @@ export default function ServicesPage({ services = [], settings = SITE }) {
 export async function getStaticProps() {
   const services = await getServices('service');
   const settings = await getSettings();
-  return { props: serializeDates({ services, settings }), revalidate: 300 };
+  const seo = await getPageSeo('/services', settings);
+  return { props: serializeDates({ services, settings, seo }), revalidate: 300 };
 }
